@@ -27,11 +27,10 @@ def setup_vertex_ai():
     os.environ.setdefault("VERTEXAI_LOCATION", region)
 
 
-def make_student_lm(model: str = "vertex_ai/gemini-2.5-flash-lite") -> dspy.LM:
+def make_student_lm(model: str = "vertex_ai/gemini-3.1-flash-lite") -> dspy.LM:
     return dspy.LM(
         model=model,
         temperature=0.0,
-        max_tokens=8192,
         num_retries=3,
     )
 
