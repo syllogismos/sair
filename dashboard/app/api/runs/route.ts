@@ -38,15 +38,17 @@ export async function GET(request: NextRequest) {
     conditions.push("r.correct = 0");
   }
   if (problem) {
-    conditions.push("r.problem_id = ?");
-    values.push(problem);
+    conditions.push("r.problem_id LIKE ?");
+    values.push(`%${problem}%`);
   }
 
   const where = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
 
-  const countRow = db
-    .prepare(`SELECT COUNT(*) as total FROM runs r ${where}`)
-    .get(...values) as { total: number };
+  const statsRow = db
+    .prepare(
+      `SELECT COUNT(*) as total, SUM(r.correct) as correct_count FROM runs r ${where}`
+    )
+    .get(...values) as { total: number; correct_count: number };
 
   const rows = db
     .prepare(
@@ -61,9 +63,10 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     rows,
-    total: countRow.total,
+    total: statsRow.total,
+    correctCount: statsRow.correct_count || 0,
     page,
     limit,
-    totalPages: Math.ceil(countRow.total / limit),
+    totalPages: Math.ceil(statsRow.total / limit),
   });
 }

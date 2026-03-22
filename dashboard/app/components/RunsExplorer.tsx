@@ -33,6 +33,7 @@ interface Model {
 interface ApiResponse {
   rows: Run[];
   total: number;
+  correctCount: number;
   page: number;
   limit: number;
   totalPages: number;
@@ -50,6 +51,7 @@ export default function RunsExplorer() {
   const [selectedModel, setSelectedModel] = useState("all");
   const [selectedBenchmark, setSelectedBenchmark] = useState("all");
   const [filterCorrect, setFilterCorrect] = useState("all");
+  const [problemSearch, setProblemSearch] = useState("");
   const [page, setPage] = useState(0);
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -73,16 +75,19 @@ export default function RunsExplorer() {
       page: page.toString(),
       limit: PAGE_SIZE.toString(),
     });
+    if (problemSearch.trim()) {
+      params.set("problem", problemSearch.trim());
+    }
     const res = await fetch(`/api/runs?${params}`);
     if (!res.ok) {
-      setData({ rows: [], total: 0, page: 0, limit: PAGE_SIZE, totalPages: 0 });
+      setData({ rows: [], total: 0, correctCount: 0, page: 0, limit: PAGE_SIZE, totalPages: 0 });
       setLoading(false);
       return;
     }
     const json = await res.json();
     setData(json);
     setLoading(false);
-  }, [selectedModel, selectedBenchmark, filterCorrect, page]);
+  }, [selectedModel, selectedBenchmark, filterCorrect, problemSearch, page]);
 
   useEffect(() => {
     fetchRuns();
@@ -152,9 +157,24 @@ export default function RunsExplorer() {
             <option value="incorrect">Incorrect only</option>
           </select>
         </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-[#a1a1aa]">Problem:</label>
+          <input
+            type="text"
+            value={problemSearch}
+            onChange={(e) => { setProblemSearch(e.target.value); resetPage(); }}
+            placeholder="e.g. normal_0007"
+            className="bg-[#18181b] border border-[#27272a] rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-[#6366f1] w-40"
+          />
+        </div>
         {data && (
           <div className="ml-auto flex gap-3 text-sm">
             <span className="text-[#a1a1aa]">{data.total.toLocaleString()} runs</span>
+            <span className="text-[#a1a1aa]">·</span>
+            <span className={data.total > 0 ? (data.correctCount / data.total >= 0.5 ? "text-emerald-400" : "text-red-400") : "text-[#a1a1aa]"}>
+              {data.total > 0 ? `${((data.correctCount / data.total) * 100).toFixed(1)}% correct` : "—"}
+            </span>
+            <span className="text-[#a1a1aa]">({data.correctCount}/{data.total})</span>
           </div>
         )}
       </div>
