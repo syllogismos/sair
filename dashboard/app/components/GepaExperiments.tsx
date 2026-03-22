@@ -922,7 +922,9 @@ function IterationsTimeline({ iterations }: { iterations: Iteration[] }) {
               )}
               {wasRejected && !isExpanded && (
                 <div className="px-3 pb-2 text-xs text-zinc-600">
-                  Proposed instruction scored {afterEvt?.new_subsample_score?.toFixed(0) ?? "?"}/3 — not better than parent&apos;s {beforeEvt?.subsample_score?.toFixed(0) ?? "?"}/3.
+                  Proposed instruction scored {afterEvt?.new_subsample_score?.toFixed(0) ?? "?"}/3 on the minibatch
+                  {beforeEvt?.subsample_score != null && (<> (parent scored {beforeEvt.subsample_score.toFixed(0)}/3)</>)}
+                  {" "}— GEPA requires strict improvement to accept.
                   {hasInstructions && " Click to see the rejected instruction."}
                 </div>
               )}
