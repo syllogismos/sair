@@ -50,9 +50,7 @@ def metric(
         problem_id = getattr(gold, "id", None)
         ref = REFERENCE_SOLUTIONS.get(problem_id, "") if problem_id else ""
         if ref:
-            # Truncate to keep feedback manageable for reflection LLM
-            truncated = ref[:2000] if len(ref) > 2000 else ref
-            feedback += f"\n\nHere is a correct solution for this problem:\n{truncated}"
+            feedback += f"\n\nHere is a correct solution for this problem:\n{ref}"
         else:
             # Fallback: give a hint about the expected answer
             if expected_answer:

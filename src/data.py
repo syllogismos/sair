@@ -47,10 +47,16 @@ def load_reference_solutions() -> dict[str, str]:
             if not line.strip():
                 continue
             row = json.loads(line)
-            if row.get("correct") and row["problem_id"] not in correct_responses:
+            if row.get("correct"):
                 response = row.get("response", "")
-                if response:
-                    correct_responses[row["problem_id"]] = response
+                if not response:
+                    continue
+                pid = row["problem_id"]
+                existing = correct_responses.get(pid, "")
+                # Prefer shorter complete solutions — they're more concise
+                # and less likely to be truncated by token limits
+                if not existing or len(response) < len(existing):
+                    correct_responses[pid] = response
 
     return correct_responses
 
