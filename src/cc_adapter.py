@@ -91,6 +91,7 @@ class ClaudeCodeLM(BaseLM):
             system_prompt = None
 
         options = ClaudeAgentOptions(
+            model=self.model,
             system_prompt=system_prompt or "You are a helpful assistant. Answer concisely.",
         )
 
