@@ -37,7 +37,7 @@ print(f"Data: {len(examples)} total, {len(train)} train, {len(val)} val")
 
 # LMs
 student_lm = dspy.LM("vertex_ai/gemini-2.5-flash-lite", temperature=0.0, max_tokens=4096, num_retries=3)
-reflection_lm = dspy.LM("vertex_ai/gemini-2.5-flash", temperature=1.0, max_tokens=4096, num_retries=3)
+reflection_lm = dspy.LM("vertex_ai/gemini-2.5-flash", temperature=1.0, max_tokens=16384, num_retries=3)
 
 # Observer
 observer = GEPAObserver(

@@ -40,7 +40,7 @@ def make_reflection_lm(model: str = "vertex_ai/gemini-3.1-pro-preview") -> dspy.
     return dspy.LM(
         model=model,
         temperature=1.0,
-        max_tokens=8192,
+        max_tokens=16384,
         num_retries=3,
     )
 
