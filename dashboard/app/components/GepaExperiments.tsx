@@ -825,74 +825,80 @@ function IterationsTimeline({ iterations }: { iterations: Iteration[] }) {
           }
 
           const wasAccepted = !!acceptedEvt;
+          const wasRejected = !wasAccepted && !!afterEvt;
+          const wasSkipped = !afterEvt && !wasAccepted;
           const instructions = proposalEvt?.new_instructions
             ? JSON.parse(proposalEvt.new_instructions)
             : null;
           const hasInstructions =
             instructions && Object.keys(instructions).length > 0;
+          const isExpanded = expandedInstr === iterNum;
 
           return (
             <div
               key={iterNum}
-              className={`border rounded-lg p-3 ${
+              className={`border rounded-lg overflow-hidden ${
                 wasAccepted
                   ? "border-emerald-500/30 bg-emerald-950/10"
-                  : "border-zinc-800 bg-zinc-900"
+                  : wasRejected
+                    ? "border-zinc-800 bg-zinc-900"
+                    : "border-zinc-800/50 bg-zinc-900/50"
               }`}
             >
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-mono text-zinc-500">
+              {/* Header — always visible */}
+              <div
+                className={`flex items-center gap-2 flex-wrap p-3 ${
+                  hasInstructions ? "cursor-pointer hover:bg-zinc-800/30" : ""
+                }`}
+                onClick={() =>
+                  hasInstructions &&
+                  setExpandedInstr(isExpanded ? null : iterNum)
+                }
+              >
+                <span className="text-xs font-mono text-zinc-500 w-10">
                   iter {iterNum}
                 </span>
 
                 {selectEvt?.selected_candidate != null && (
                   <span className="text-xs text-zinc-400">
-                    parent: <span className="font-mono text-zinc-300">#{selectEvt.selected_candidate}</span>
+                    parent <span className="font-mono text-zinc-300">#{selectEvt.selected_candidate}</span>
                   </span>
                 )}
 
-                {beforeEvt?.subsample_score != null && (
-                  <span className="text-xs text-zinc-500">
-                    before: {beforeEvt.subsample_score.toFixed(1)}
-                  </span>
-                )}
-
-                {afterEvt?.new_subsample_score != null && (
-                  <>
-                    <span className="text-zinc-600">→</span>
-                    <span
-                      className={`text-xs font-medium ${
-                        afterEvt.new_subsample_score >
-                        (beforeEvt?.subsample_score ?? 0)
-                          ? "text-emerald-400"
-                          : "text-red-400"
-                      }`}
-                    >
-                      after: {afterEvt.new_subsample_score.toFixed(1)}
-                    </span>
-                  </>
-                )}
-
+                {/* Status badge */}
                 {wasAccepted && (
                   <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                     accepted → #{acceptedEvt.new_program_idx}
                   </span>
                 )}
-
-                {!wasAccepted && afterEvt && (
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-400">
+                {wasRejected && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/10 text-red-400/70 border border-red-500/20">
                     rejected
                   </span>
                 )}
-
-                {!afterEvt && !wasAccepted && (
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-500">
+                {wasSkipped && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-700/50 text-zinc-500">
                     skipped
                   </span>
                 )}
 
+                {/* Scores */}
+                {beforeEvt?.subsample_score != null && afterEvt?.new_subsample_score != null && (
+                  <span className="text-xs text-zinc-500">
+                    {beforeEvt.subsample_score.toFixed(0)}/3
+                    <span className="text-zinc-600 mx-1">→</span>
+                    <span className={
+                      afterEvt.new_subsample_score > beforeEvt.subsample_score
+                        ? "text-emerald-400"
+                        : "text-red-400"
+                    }>
+                      {afterEvt.new_subsample_score.toFixed(0)}/3
+                    </span>
+                  </span>
+                )}
+
                 {acceptedEvt?.best_score != null && (
-                  <span className="text-xs text-zinc-400 ml-auto">
+                  <span className="text-xs text-zinc-400">
                     best: {(acceptedEvt.best_score * 100).toFixed(1)}%
                   </span>
                 )}
@@ -900,35 +906,46 @@ function IterationsTimeline({ iterations }: { iterations: Iteration[] }) {
                 <span className="text-xs text-zinc-600 ml-auto">
                   @{events[events.length - 1]?.total_metric_calls ?? "?"} calls
                 </span>
+
+                {hasInstructions && (
+                  <span className="text-zinc-600 text-xs">
+                    {isExpanded ? "▲" : "▼"}
+                  </span>
+                )}
               </div>
 
-              {/* Expandable instructions */}
-              {hasInstructions && (
-                <div className="mt-2">
-                  <button
-                    onClick={() =>
-                      setExpandedInstr(
-                        expandedInstr === iterNum ? null : iterNum
-                      )
-                    }
-                    className="text-xs text-indigo-400 hover:text-indigo-300"
-                  >
-                    {expandedInstr === iterNum
-                      ? "Hide proposed instruction"
-                      : "Show proposed instruction"}
-                  </button>
-                  {expandedInstr === iterNum && (
-                    <div className="mt-1">
-                      {Object.entries(instructions).map(([name, text]) => (
-                        <pre
-                          key={name}
-                          className="text-xs text-zinc-300 bg-[#09090b] rounded-lg p-3 border border-zinc-800 whitespace-pre-wrap break-words max-h-48 overflow-y-auto mt-1"
-                        >
-                          {text as string}
-                        </pre>
-                      ))}
-                    </div>
-                  )}
+              {/* Detail — reason for skip/reject */}
+              {wasSkipped && (
+                <div className="px-3 pb-2 text-xs text-zinc-600">
+                  Minibatch scored perfectly — no failures to learn from, skipping reflection.
+                </div>
+              )}
+              {wasRejected && !isExpanded && (
+                <div className="px-3 pb-2 text-xs text-zinc-600">
+                  Proposed instruction scored {afterEvt?.new_subsample_score?.toFixed(0) ?? "?"}/3 — not better than parent&apos;s {beforeEvt?.subsample_score?.toFixed(0) ?? "?"}/3.
+                  {hasInstructions && " Click to see the rejected instruction."}
+                </div>
+              )}
+              {wasAccepted && !isExpanded && hasInstructions && (
+                <div className="px-3 pb-2 text-xs text-zinc-500">
+                  Click to see the accepted instruction.
+                </div>
+              )}
+
+              {/* Expanded instruction */}
+              {isExpanded && hasInstructions && (
+                <div className="px-3 pb-3 border-t border-zinc-800/50">
+                  <div className="text-xs text-zinc-500 mt-2 mb-1">
+                    Proposed instruction {wasAccepted ? "(accepted)" : wasRejected ? "(rejected)" : ""}
+                  </div>
+                  {Object.entries(instructions).map(([name, text]) => (
+                    <pre
+                      key={name}
+                      className="text-xs text-zinc-300 bg-[#09090b] rounded-lg p-3 border border-zinc-800 whitespace-pre-wrap break-words max-h-64 overflow-y-auto mt-1"
+                    >
+                      {text as string}
+                    </pre>
+                  ))}
                 </div>
               )}
             </div>
