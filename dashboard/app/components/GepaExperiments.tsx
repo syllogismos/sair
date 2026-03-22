@@ -442,9 +442,9 @@ function CandidatesTable({
 function ParetoSummary({ data }: { data: ParetoEntry[] }) {
   if (data.length === 0) return null;
 
-  // Check if all candidates have the same count — if so, not useful
   const counts = data.map((d) => d.frontier_count);
-  const allEqual = counts.every((c) => c === counts[0]);
+  const maxCount = Math.max(...counts);
+  const totalExamples = counts.reduce((s, c) => s + c, 0);
 
   return (
     <div>
@@ -452,52 +452,40 @@ function ParetoSummary({ data }: { data: ParetoEntry[] }) {
         Pareto Frontier
       </h3>
       <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-        {allEqual ? (
-          <div className="text-xs text-zinc-500">
-            All {data.length} candidates perform equally across validation examples — no differentiation yet.
-            Try a larger dataset for meaningful Pareto selection.
-          </div>
-        ) : (
-          <>
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-left text-zinc-500 border-b border-zinc-800">
-                  <th className="pb-2 pr-4">Candidate</th>
-                  <th className="pb-2 text-right">Best on N examples</th>
-                  <th className="pb-2 pl-4">Coverage</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((d) => {
-                  const maxCount = Math.max(...counts);
-                  return (
-                    <tr key={d.candidate_idx} className="border-b border-zinc-800/50">
-                      <td className="py-1.5 pr-4 font-mono text-zinc-300">
-                        #{d.candidate_idx}
-                      </td>
-                      <td className="py-1.5 text-right text-zinc-400">
-                        {d.frontier_count}
-                      </td>
-                      <td className="py-1.5 pl-4">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden max-w-[200px]">
-                            <div
-                              className="h-full rounded-full bg-amber-500/50"
-                              style={{ width: `${(d.frontier_count / maxCount) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            <div className="text-xs text-zinc-600 mt-2">
-              Candidates on the Pareto frontier — each is best on different validation examples
-            </div>
-          </>
-        )}
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-left text-zinc-500 border-b border-zinc-800">
+              <th className="pb-2 pr-4">Candidate</th>
+              <th className="pb-2 text-right">Best on</th>
+              <th className="pb-2 pl-4">Coverage</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((d) => (
+              <tr key={d.candidate_idx} className="border-b border-zinc-800/50">
+                <td className="py-1.5 pr-4 font-mono text-zinc-300">
+                  #{d.candidate_idx}
+                </td>
+                <td className="py-1.5 text-right text-zinc-400">
+                  {d.frontier_count} / {totalExamples}
+                </td>
+                <td className="py-1.5 pl-4">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden max-w-[200px]">
+                      <div
+                        className="h-full rounded-full bg-amber-500/50"
+                        style={{ width: `${(d.frontier_count / maxCount) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="text-xs text-zinc-600 mt-2">
+          Each candidate is best on different validation examples — no single prompt solves everything
+        </div>
       </div>
     </div>
   );
@@ -977,9 +965,23 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
   >("optimization");
 
   useEffect(() => {
-    fetch(`/api/gepa?run_id=${runId}`)
-      .then((r) => r.json())
-      .then(setData);
+    let alive = true;
+
+    const poll = () => {
+      fetch(`/api/gepa?run_id=${runId}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (!alive) return;
+          setData(d);
+          // Keep polling while run is still running
+          if (d.run?.status === "running") {
+            setTimeout(poll, 3000);
+          }
+        });
+    };
+    poll();
+
+    return () => { alive = false; };
   }, [runId]);
 
   if (!data) return <div className="text-zinc-500">Loading...</div>;
@@ -1004,7 +1006,7 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
         <span className="text-xs text-zinc-500 font-mono">{run.run_id}</span>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-5 gap-4">
         {[
           { label: "Solver", value: run.solver },
           { label: "Auto", value: run.auto },
@@ -1014,6 +1016,12 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
             value: run.finished_at
               ? formatDuration(run.finished_at - run.started_at)
               : "running...",
+          },
+          {
+            label: "Cost",
+            value: formatCost(
+              calls.reduce((s: number, c: CallGroup) => s + (c.cost_usd || 0), 0)
+            ),
           },
         ].map((s) => (
           <div
@@ -1220,13 +1228,24 @@ export default function GepaExperiments({
   }, [initialRunId]);
 
   useEffect(() => {
-    fetch("/api/gepa")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) setError(data.error);
-        setRuns(data.runs || []);
-      })
-      .catch((e) => setError(e.message));
+    let alive = true;
+
+    const poll = () => {
+      fetch("/api/gepa")
+        .then((r) => r.json())
+        .then((data) => {
+          if (!alive) return;
+          if (data.error) setError(data.error);
+          setRuns(data.runs || []);
+          // Poll if any run is still running
+          const hasRunning = (data.runs || []).some((r: Run) => r.status === "running");
+          if (hasRunning) setTimeout(poll, 5000);
+        })
+        .catch((e) => { if (alive) setError(e.message); });
+    };
+    poll();
+
+    return () => { alive = false; };
   }, []);
 
   if (selectedRun) {
