@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useSyncExternalStore } from "react";
 import LeaderboardView from "./components/LeaderboardView";
 import ModelBreakdownView from "./components/ModelBreakdownView";
 import ProblemExplorer from "./components/ProblemExplorer";
@@ -23,6 +23,34 @@ const SLUG_TO_TAB = Object.fromEntries(
   Object.entries(TAB_SLUGS).map(([tab, slug]) => [slug, tab as Tab])
 );
 
+// Global fetch activity tracker
+let activeFetches = 0;
+let listeners: (() => void)[] = [];
+function notifyListeners() { listeners.forEach((l) => l()); }
+
+const originalFetch = typeof window !== "undefined" ? window.fetch : undefined;
+if (typeof window !== "undefined") {
+  window.fetch = async (...args) => {
+    // Only track /api calls
+    const url = typeof args[0] === "string" ? args[0] : (args[0] as Request)?.url || "";
+    const isApi = url.startsWith("/api");
+    if (isApi) { activeFetches++; notifyListeners(); }
+    try {
+      return await originalFetch!(...args);
+    } finally {
+      if (isApi) { activeFetches--; notifyListeners(); }
+    }
+  };
+}
+
+function useIsLoading() {
+  return useSyncExternalStore(
+    (cb) => { listeners.push(cb); return () => { listeners = listeners.filter((l) => l !== cb); }; },
+    () => activeFetches > 0,
+    () => false,
+  );
+}
+
 function parseHash(): { tab: Tab; runId?: string } {
   if (typeof window === "undefined") return { tab: "Leaderboard" };
   const hash = window.location.hash.replace("#", "");
@@ -36,6 +64,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("Leaderboard");
   const [gepaRunId, setGepaRunId] = useState<string | undefined>();
   const [tabKey, setTabKey] = useState(0);
+  const isLoading = useIsLoading();
 
   // Read hash on mount and on hash change
   useEffect(() => {
@@ -60,13 +89,21 @@ export default function Home() {
       {/* Header */}
       <header className="border-b border-[#27272a] px-6 py-4">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">
-              Equational Theories Dashboard
-            </h1>
-            <p className="text-sm text-[#a1a1aa] mt-0.5">
-              SAIR Mathematics Distillation Challenge — Stage 1
-            </p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-xl font-semibold tracking-tight">
+                Equational Theories Dashboard
+              </h1>
+              <p className="text-sm text-[#a1a1aa] mt-0.5">
+                SAIR Mathematics Distillation Challenge — Stage 1
+              </p>
+            </div>
+            {isLoading && (
+              <div className="flex items-center gap-1.5 ml-3 px-2 py-1 rounded bg-[#18181b] border border-[#27272a]">
+                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                <span className="text-xs text-zinc-500">loading</span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-1 bg-[#18181b] rounded-lg p-1 border border-[#27272a]">
             {TABS.map((tab) => (
