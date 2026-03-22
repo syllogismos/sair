@@ -1007,7 +1007,7 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
         <span className="text-xs text-zinc-500 font-mono">{run.run_id}</span>
       </div>
 
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-6 gap-4">
         {[
           { label: "Solver", value: run.solver },
           { label: "Auto", value: run.auto },
@@ -1023,6 +1023,14 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
             value: formatCost(
               calls.reduce((s: number, c: CallGroup) => s + (c.cost_usd || 0), 0)
             ),
+          },
+          {
+            label: "Avg Response",
+            value: (() => {
+              const totalCalls = calls.reduce((s: number, c: CallGroup) => s + c.calls, 0);
+              const totalTime = calls.reduce((s: number, c: CallGroup) => s + (c.duration_secs || 0), 0);
+              return totalCalls > 0 ? `${(totalTime / totalCalls).toFixed(1)}s` : "—";
+            })(),
           },
         ].map((s) => (
           <div
@@ -1103,7 +1111,8 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
                   <th className="pb-2 text-right">Prompt Tok</th>
                   <th className="pb-2 text-right">Comp Tok</th>
                   <th className="pb-2 text-right">Cost</th>
-                  <th className="pb-2 text-right">Time</th>
+                  <th className="pb-2 text-right">Total Time</th>
+                  <th className="pb-2 text-right">Avg/Call</th>
                   <th className="pb-2 text-right">Errors</th>
                 </tr>
               </thead>
@@ -1134,6 +1143,9 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
                     </td>
                     <td className="py-2 text-right">
                       {formatDuration(c.duration_secs || 0)}
+                    </td>
+                    <td className="py-2 text-right">
+                      {c.calls > 0 ? `${((c.duration_secs || 0) / c.calls).toFixed(1)}s` : "—"}
                     </td>
                     <td className="py-2 text-right">
                       {c.errors > 0 ? (
