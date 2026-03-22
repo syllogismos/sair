@@ -442,7 +442,9 @@ function CandidatesTable({
 function ParetoSummary({ data }: { data: ParetoEntry[] }) {
   if (data.length === 0) return null;
 
-  const total = data.reduce((s, d) => s + d.frontier_count, 0);
+  // Check if all candidates have the same count — if so, not useful
+  const counts = data.map((d) => d.frontier_count);
+  const allEqual = counts.every((c) => c === counts[0]);
 
   return (
     <div>
@@ -450,36 +452,63 @@ function ParetoSummary({ data }: { data: ParetoEntry[] }) {
         Pareto Frontier
       </h3>
       <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-        <div className="flex items-end gap-1" style={{ height: 80 }}>
-          {data.map((d) => {
-            const pct = (d.frontier_count / total) * 100;
-            return (
-              <div
-                key={d.candidate_idx}
-                className="flex-1 flex flex-col items-center gap-1"
-              >
-                <div
-                  className="w-full bg-amber-500/30 border border-amber-500/20 rounded-t"
-                  style={{ height: `${Math.max(4, pct)}%` }}
-                  title={`Candidate #${d.candidate_idx}: best on ${d.frontier_count} examples`}
-                />
-                <span className="text-[10px] text-zinc-500">
-                  #{d.candidate_idx}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-        <div className="text-xs text-zinc-600 mt-2">
-          {data.length} candidates on Pareto frontier across {total} validation examples
-        </div>
+        {allEqual ? (
+          <div className="text-xs text-zinc-500">
+            All {data.length} candidates perform equally across validation examples — no differentiation yet.
+            Try a larger dataset for meaningful Pareto selection.
+          </div>
+        ) : (
+          <>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-zinc-500 border-b border-zinc-800">
+                  <th className="pb-2 pr-4">Candidate</th>
+                  <th className="pb-2 text-right">Best on N examples</th>
+                  <th className="pb-2 pl-4">Coverage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((d) => {
+                  const maxCount = Math.max(...counts);
+                  return (
+                    <tr key={d.candidate_idx} className="border-b border-zinc-800/50">
+                      <td className="py-1.5 pr-4 font-mono text-zinc-300">
+                        #{d.candidate_idx}
+                      </td>
+                      <td className="py-1.5 text-right text-zinc-400">
+                        {d.frontier_count}
+                      </td>
+                      <td className="py-1.5 pl-4">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden max-w-[200px]">
+                            <div
+                              className="h-full rounded-full bg-amber-500/50"
+                              style={{ width: `${(d.frontier_count / maxCount) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div className="text-xs text-zinc-600 mt-2">
+              Candidates on the Pareto frontier — each is best on different validation examples
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
 function RecentMetricCalls({ data }: { data: MetricCall[] }) {
+  const [selected, setSelected] = useState<MetricCall | null>(null);
+
   if (data.length === 0) return null;
+
+  const reversed = [...data].reverse();
 
   return (
     <div>
@@ -487,15 +516,16 @@ function RecentMetricCalls({ data }: { data: MetricCall[] }) {
         Recent Metric Evaluations (last 100)
       </h3>
       <div className="flex flex-wrap gap-[2px]">
-        {[...data].reverse().map((d) => (
+        {reversed.map((d) => (
           <div
             key={d.seq}
-            className={`w-3 h-3 rounded-[2px] ${
+            onClick={() => setSelected(selected?.seq === d.seq ? null : d)}
+            className={`w-3 h-3 rounded-[2px] cursor-pointer transition-all ${
               d.score >= 1.0
-                ? "bg-emerald-500/60"
-                : "bg-red-500/40"
-            }`}
-            title={`#${d.seq} ${d.problem_id}: ${d.score >= 1.0 ? "correct" : "wrong"} (expected=${d.expected ? "TRUE" : "FALSE"}, predicted=${d.predicted ? "TRUE" : "FALSE"})`}
+                ? "bg-emerald-500/60 hover:bg-emerald-400"
+                : "bg-red-500/40 hover:bg-red-400"
+            } ${selected?.seq === d.seq ? "ring-1 ring-white" : ""}`}
+            title={`#${d.seq} ${d.problem_id}`}
           />
         ))}
       </div>
@@ -510,6 +540,60 @@ function RecentMetricCalls({ data }: { data: MetricCall[] }) {
           {data.filter((d) => d.score >= 1.0).length}/{data.length} in last batch
         </span>
       </div>
+
+      {selected && (
+        <div className="mt-3 bg-[#09090b] border border-zinc-800 rounded-lg p-4 text-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <span className={`px-2 py-0.5 text-xs rounded border ${
+                selected.score >= 1.0
+                  ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                  : "bg-red-500/20 text-red-400 border-red-500/30"
+              }`}>
+                {selected.score >= 1.0 ? "Correct" : "Wrong"}
+              </span>
+              <span className="text-xs font-mono text-zinc-400">
+                #{selected.seq}
+              </span>
+              <span className="text-xs text-zinc-500">
+                {selected.problem_id}
+              </span>
+            </div>
+            <button
+              onClick={() => setSelected(null)}
+              className="text-zinc-500 hover:text-white text-xs"
+            >
+              Close
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-4 mb-3">
+            <div>
+              <div className="text-xs text-zinc-500 mb-1">Expected</div>
+              <div className={`text-sm font-mono ${selected.expected ? "text-emerald-400" : "text-red-400"}`}>
+                {selected.expected ? "TRUE" : "FALSE"}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-zinc-500 mb-1">Predicted</div>
+              <div className={`text-sm font-mono ${
+                selected.predicted === selected.expected
+                  ? "text-emerald-400"
+                  : "text-red-400"
+              }`}>
+                {selected.predicted ? "TRUE" : "FALSE"}
+              </div>
+            </div>
+          </div>
+          {selected.feedback_preview && (
+            <div>
+              <div className="text-xs text-zinc-500 mb-1">Feedback</div>
+              <pre className="text-xs text-zinc-300 bg-zinc-900 rounded-lg p-3 border border-zinc-800 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+                {selected.feedback_preview}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
