@@ -31,13 +31,19 @@ def metric(
     if isinstance(verdict, str):
         verdict = verdict.strip().lower() in ("true", "1", "yes")
 
-    correct = verdict == gold.answer
+    # Normalize gold answer the same way (defensive — JSONL uses JSON bools,
+    # but guard against string-encoded answers)
+    expected_answer = gold.answer
+    if isinstance(expected_answer, str):
+        expected_answer = expected_answer.strip().lower() in ("true", "1", "yes")
+
+    correct = verdict == expected_answer
     score = 1.0 if correct else 0.0
 
     if correct:
         feedback = "Correct."
     else:
-        expected = "TRUE" if gold.answer else "FALSE"
+        expected = "TRUE" if expected_answer else "FALSE"
         feedback = f"Wrong. Expected {expected}."
 
         # Add reference solution from benchmark traces if available
@@ -49,7 +55,7 @@ def metric(
             feedback += f"\n\nHere is a correct solution for this problem:\n{truncated}"
         else:
             # Fallback: give a hint about the expected answer
-            if gold.answer:
+            if expected_answer:
                 feedback += (
                     " The implication IS true. Consider whether Equation 1 "
                     "forces the magma to have only one element (trivializing), "

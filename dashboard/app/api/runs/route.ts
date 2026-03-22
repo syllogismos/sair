@@ -11,7 +11,15 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(params.get("limit") || "50");
   const offset = page * limit;
 
-  const db = getDb();
+  let db: ReturnType<typeof getDb>;
+  try {
+    db = getDb();
+  } catch (e) {
+    return NextResponse.json(
+      { error: `Failed to open data.db: ${e instanceof Error ? e.message : e}` },
+      { status: 503 },
+    );
+  }
 
   const conditions: string[] = [];
   const values: (string | number)[] = [];

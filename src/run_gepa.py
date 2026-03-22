@@ -103,14 +103,23 @@ def main():
 
     # Setup observability
     run_name = f"{args.solver}_{args.auto}_seed{args.seed}"
+    reflection_model_name = "claude-opus-4-6" if args.use_cc else args.reflection_model
     observer = GEPAObserver(
         db_path=args.db_path,
         run_name=run_name,
         solver=args.solver,
         auto=args.auto,
+        student_model=args.student_model,
+        reflection_model=reflection_model_name,
     )
     print(f"Run ID: {observer.run_id} ({run_name})")
     dspy.configure(lm=student_lm, callbacks=[observer])
+
+    # Install real-time GEPA iteration tracking (must be before compile)
+    observer.install_gepa_hooks()
+
+    # Wrap metric for real-time GEPA evaluation tracking
+    tracked_metric = observer.wrap_metric(metric)
 
     # Load cheatsheet if provided
     cheatsheet = ""
@@ -129,7 +138,7 @@ def main():
     print()
 
     optimizer = dspy.GEPA(
-        metric=metric,
+        metric=tracked_metric,
         reflection_lm=reflection_lm,
         auto=args.auto,
         track_stats=True,
@@ -141,6 +150,7 @@ def main():
     try:
         with dspy.track_usage() as usage:
             optimized = optimizer.compile(solver, trainset=train, valset=val)
+        observer.dump_gepa_results(optimized)
         observer.finish("completed")
     except Exception as e:
         observer.finish("failed")

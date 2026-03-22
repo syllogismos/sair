@@ -74,6 +74,11 @@ export default function RunsExplorer() {
       limit: PAGE_SIZE.toString(),
     });
     const res = await fetch(`/api/runs?${params}`);
+    if (!res.ok) {
+      setData({ rows: [], total: 0, page: 0, limit: PAGE_SIZE, totalPages: 0 });
+      setLoading(false);
+      return;
+    }
     const json = await res.json();
     setData(json);
     setLoading(false);

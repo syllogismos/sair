@@ -75,3 +75,38 @@ def test_returns_prediction_with_score_and_feedback():
     assert hasattr(result, "feedback")
     assert result["score"] == 1.0  # GEPA accesses via dict-style
     assert isinstance(result["feedback"], str)
+
+
+def test_gold_answer_string_true():
+    """gold.answer as string 'true' should be normalized to bool."""
+    gold = dspy.Example(
+        id="str_test", equation1="x = x", equation2="x = x", answer="true",
+    ).with_inputs("equation1", "equation2")
+    result = metric(gold, dspy.Prediction(verdict="TRUE"), None, None, None)
+    assert result.score == 1.0
+
+
+def test_gold_answer_string_false():
+    gold = dspy.Example(
+        id="str_test", equation1="x = x", equation2="x = x", answer="FALSE",
+    ).with_inputs("equation1", "equation2")
+    result = metric(gold, dspy.Prediction(verdict="FALSE"), None, None, None)
+    assert result.score == 1.0
+
+
+def test_gold_answer_string_mismatch():
+    gold = dspy.Example(
+        id="str_test", equation1="x = x", equation2="x = x", answer="TRUE",
+    ).with_inputs("equation1", "equation2")
+    result = metric(gold, dspy.Prediction(verdict="FALSE"), None, None, None)
+    assert result.score == 0.0
+
+
+def test_feedback_uses_normalized_answer():
+    """Feedback should say 'Expected TRUE' even when gold.answer is string 'true'."""
+    gold = dspy.Example(
+        id="fb_test", equation1="x = x", equation2="x = x", answer="true",
+    ).with_inputs("equation1", "equation2")
+    set_reference_solutions({})
+    result = metric(gold, dspy.Prediction(verdict="FALSE"), None, None, None)
+    assert "Expected TRUE" in result.feedback

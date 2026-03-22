@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import LeaderboardView from "./components/LeaderboardView";
 import ModelBreakdownView from "./components/ModelBreakdownView";
 import ProblemExplorer from "./components/ProblemExplorer";
@@ -11,8 +11,47 @@ import AutoResearchView from "./components/AutoResearchView";
 const TABS = ["Leaderboard", "Model Breakdown", "Problems", "Runs", "GEPA Experiments", "AutoResearch"] as const;
 type Tab = (typeof TABS)[number];
 
+const TAB_SLUGS: Record<Tab, string> = {
+  "Leaderboard": "leaderboard",
+  "Model Breakdown": "models",
+  "Problems": "problems",
+  "Runs": "runs",
+  "GEPA Experiments": "gepa",
+  "AutoResearch": "autoresearch",
+};
+const SLUG_TO_TAB = Object.fromEntries(
+  Object.entries(TAB_SLUGS).map(([tab, slug]) => [slug, tab as Tab])
+);
+
+function parseHash(): { tab: Tab; runId?: string } {
+  if (typeof window === "undefined") return { tab: "Leaderboard" };
+  const hash = window.location.hash.replace("#", "");
+  const [slug, ...rest] = hash.split("/");
+  const tab = SLUG_TO_TAB[slug] || "Leaderboard";
+  const runId = rest.length > 0 ? rest.join("/") : undefined;
+  return { tab, runId };
+}
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("Leaderboard");
+  const [gepaRunId, setGepaRunId] = useState<string | undefined>();
+
+  // Read hash on mount and on hash change
+  useEffect(() => {
+    function onHashChange() {
+      const { tab, runId } = parseHash();
+      setActiveTab(tab);
+      setGepaRunId(runId);
+    }
+    onHashChange();
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  const navigate = useCallback((tab: Tab, runId?: string) => {
+    const slug = TAB_SLUGS[tab];
+    window.location.hash = runId ? `${slug}/${runId}` : slug;
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -31,7 +70,7 @@ export default function Home() {
             {TABS.map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => navigate(tab)}
                 className={`px-3 py-1.5 text-sm rounded-md transition-all ${
                   activeTab === tab
                     ? "bg-[#6366f1] text-white font-medium"
@@ -52,7 +91,12 @@ export default function Home() {
           {activeTab === "Model Breakdown" && <ModelBreakdownView />}
           {activeTab === "Problems" && <ProblemExplorer />}
           {activeTab === "Runs" && <RunsExplorer />}
-          {activeTab === "GEPA Experiments" && <GepaExperiments />}
+          {activeTab === "GEPA Experiments" && (
+            <GepaExperiments
+              initialRunId={gepaRunId}
+              onNavigate={(runId) => navigate("GEPA Experiments", runId)}
+            />
+          )}
           {activeTab === "AutoResearch" && <AutoResearchView />}
         </div>
       </main>

@@ -35,6 +35,8 @@ def load_reference_solutions() -> dict[str, str]:
 
     Returns a dict mapping problem_id -> response text.
     """
+    # TODO: Cache the extracted solutions to a smaller file (e.g. pickle/JSON)
+    # to avoid re-processing the ~265MB benchmark_runs.jsonl on every run.
     path = DATA_DIR / "benchmark_runs.jsonl"
     correct_responses: dict[str, str] = {}
     if not path.exists():
