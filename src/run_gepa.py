@@ -142,7 +142,7 @@ def main():
         reflection_lm=reflection_lm,
         auto=args.auto,
         track_stats=True,
-        log_dir=args.log_dir,
+        log_dir=str(Path(args.log_dir) / observer.run_id),
         seed=args.seed,
         failure_score=0.0,
     )

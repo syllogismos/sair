@@ -64,7 +64,7 @@ optimizer = dspy.GEPA(
     reflection_lm=reflection_lm,
     max_metric_calls=60,  # ~3 full evals worth, enough to see 2-3 candidates
     track_stats=True,
-    log_dir="gepa_logs",
+    log_dir=f"gepa_logs/{observer.run_id}",
     seed=42,
     failure_score=0.0,
 )
