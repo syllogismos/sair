@@ -27,7 +27,7 @@ def setup_vertex_ai():
     os.environ.setdefault("VERTEXAI_LOCATION", region)
 
 
-def make_student_lm(model: str = "vertex_ai/gemini-3.1-flash-lite") -> dspy.LM:
+def make_student_lm(model: str = "vertex_ai/gemini-3.1-flash-lite-preview") -> dspy.LM:
     return dspy.LM(
         model=model,
         temperature=0.0,
@@ -150,6 +150,10 @@ def main():
             optimized = optimizer.compile(solver, trainset=train, valset=val)
         observer.dump_gepa_results(optimized)
         observer.finish("completed")
+    except KeyboardInterrupt:
+        observer.finish("cancelled")
+        print("\nCancelled by user.")
+        sys.exit(0)
     except Exception as e:
         observer.finish("failed")
         raise
