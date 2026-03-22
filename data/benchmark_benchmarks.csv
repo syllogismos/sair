@@ -1,0 +1,5 @@
+benchmark_id,problem_source_dataset,problem_subset,problem_count,model_count,repeat_count,template_id,template_path,reasoning_mode,temperature_mode,cheatsheet_mode
+hard_200_common_25_low_reason,SAIRfoundation/equational-theories-selected-problems,hard,200,25,3,evaluation,prompts/evaluation.jinja2,low_or_none,low,none
+hard_200_common_25_default_reason,SAIRfoundation/equational-theories-selected-problems,hard,200,25,3,evaluation,prompts/evaluation.jinja2,default,default,none
+normal_200_common_25_low_reason,SAIRfoundation/equational-theories-selected-problems,normal,200,25,3,evaluation,prompts/evaluation.jinja2,low_or_none,low,none
+normal_200_common_25_default_reason,SAIRfoundation/equational-theories-selected-problems,normal,200,25,3,evaluation,prompts/evaluation.jinja2,default,default,none

@@ -1,0 +1,5 @@
+benchmark_id,template_id,template_path,render_format,variables,notes
+hard_200_common_25_low_reason,evaluation,prompts/evaluation.jinja2,jinja2,['equation1' 'equation2' 'cheatsheet'],Used for the hard-200 benchmark with no cheatsheet and low or no reasoning settings.
+hard_200_common_25_default_reason,evaluation,prompts/evaluation.jinja2,jinja2,['equation1' 'equation2' 'cheatsheet'],"Used for the hard-200 benchmark with no cheatsheet and default reasoning settings. Source exports used different template labels, but all runs are treated as using the evaluation template."
+normal_200_common_25_low_reason,evaluation,prompts/evaluation.jinja2,jinja2,['equation1' 'equation2' 'cheatsheet'],Used for the normal-200 benchmark with no cheatsheet and low or no reasoning settings.
+normal_200_common_25_default_reason,evaluation,prompts/evaluation.jinja2,jinja2,['equation1' 'equation2' 'cheatsheet'],"Used for the normal-200 benchmark with no cheatsheet and default reasoning settings. Source exports used different template labels, but all runs are treated as using the evaluation template."
