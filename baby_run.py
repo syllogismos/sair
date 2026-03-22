@@ -13,6 +13,7 @@ from observer import GEPAObserver
 from solver import SolverV1
 
 # Setup Vertex AI (same as run_gepa.py)
+os.environ.setdefault("GOOGLE_APPLICATION_CREDENTIALS", "/path/to/credentials.json")
 os.environ.setdefault("VERTEXAI_PROJECT", "YOUR_GCP_PROJECT")
 os.environ.setdefault("VERTEXAI_LOCATION", "global")
 

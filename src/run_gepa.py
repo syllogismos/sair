@@ -21,6 +21,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 def setup_vertex_ai():
     """Configure Vertex AI credentials and project."""
+    os.environ.setdefault("GOOGLE_APPLICATION_CREDENTIALS", "/path/to/credentials.json")
     project = os.environ.get("GOOGLE_CLOUD_PROJECT", "YOUR_GCP_PROJECT")
     region = os.environ.get("GOOGLE_CLOUD_REGION", "global")
     os.environ.setdefault("VERTEXAI_PROJECT", project)
