@@ -7,7 +7,29 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Any
 
+import dspy
 from dspy.clients.base_lm import BaseLM
+from dspy.utils.callback import _get_on_start_handler, _get_on_end_handler
+import dspy.utils.callback as _cb_module
+
+# Patch DSPy's callback dispatch to recognize BaseLM subclasses (not just dspy.LM)
+# for on_lm_start/on_lm_end. Without this, ClaudeCodeLM (which inherits BaseLM
+# directly) gets routed to on_module_start/on_module_end and LLM calls aren't tracked.
+_orig_start = _get_on_start_handler
+_orig_end = _get_on_end_handler
+
+def _patched_start(callback, instance, fn):
+    if isinstance(instance, BaseLM):
+        return callback.on_lm_start
+    return _orig_start(callback, instance, fn)
+
+def _patched_end(callback, instance, fn):
+    if isinstance(instance, BaseLM):
+        return callback.on_lm_end
+    return _orig_end(callback, instance, fn)
+
+_cb_module._get_on_start_handler = _patched_start
+_cb_module._get_on_end_handler = _patched_end
 
 
 @dataclass
