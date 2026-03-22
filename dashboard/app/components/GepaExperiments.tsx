@@ -1294,14 +1294,11 @@ export default function GepaExperiments({
           <tr className="text-left text-xs text-zinc-500 border-b border-zinc-800">
             <th className="pb-2">Run</th>
             <th className="pb-2">Status</th>
-            <th className="pb-2">Solver</th>
-            <th className="pb-2">Auto</th>
-            <th className="pb-2 text-right">Candidates</th>
             <th className="pb-2 text-right">Best Score</th>
-            <th className="pb-2 text-right">LLM Calls</th>
+            <th className="pb-2 text-right">Candidates</th>
             <th className="pb-2 text-right">Cost</th>
             <th className="pb-2 text-right">Duration</th>
-            <th className="pb-2">Started</th>
+            <th className="pb-2 pl-4">Started</th>
           </tr>
         </thead>
         <tbody>
@@ -1317,16 +1314,11 @@ export default function GepaExperiments({
               <td className="py-2">
                 <div className="font-medium">{r.name || r.run_id}</div>
                 <div className="text-xs text-zinc-600 font-mono">
-                  {r.run_id}
+                  {r.run_id} · {r.solver} · {r.auto}
                 </div>
               </td>
               <td className="py-2">
                 <StatusBadge status={r.status} />
-              </td>
-              <td className="py-2">{r.solver}</td>
-              <td className="py-2">{r.auto}</td>
-              <td className="py-2 text-right">
-                {r.num_candidates ?? "—"}
               </td>
               <td className="py-2 text-right">
                 {r.best_score != null ? (
@@ -1337,14 +1329,16 @@ export default function GepaExperiments({
                   "—"
                 )}
               </td>
-              <td className="py-2 text-right">{r.total_calls}</td>
+              <td className="py-2 text-right">
+                {r.num_candidates ?? "—"}
+              </td>
               <td className="py-2 text-right">
                 {formatCost(r.total_cost || 0)}
               </td>
               <td className="py-2 text-right">
                 {formatDuration(r.total_duration || 0)}
               </td>
-              <td className="py-2 text-xs text-zinc-500">
+              <td className="py-2 text-xs text-zinc-500 pl-4">
                 {formatTime(r.started_at)}
               </td>
             </tr>
