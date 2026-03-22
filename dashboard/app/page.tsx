@@ -35,6 +35,7 @@ function parseHash(): { tab: Tab; runId?: string } {
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("Leaderboard");
   const [gepaRunId, setGepaRunId] = useState<string | undefined>();
+  const [tabKey, setTabKey] = useState(0);
 
   // Read hash on mount and on hash change
   useEffect(() => {
@@ -42,6 +43,7 @@ export default function Home() {
       const { tab, runId } = parseHash();
       setActiveTab(tab);
       setGepaRunId(runId);
+      setTabKey((k) => k + 1);
     }
     onHashChange();
     window.addEventListener("hashchange", onHashChange);
@@ -87,17 +89,18 @@ export default function Home() {
       {/* Content */}
       <main className="flex-1 px-6 py-6">
         <div className="max-w-[1400px] mx-auto">
-          {activeTab === "Leaderboard" && <LeaderboardView />}
-          {activeTab === "Model Breakdown" && <ModelBreakdownView />}
-          {activeTab === "Problems" && <ProblemExplorer />}
-          {activeTab === "Runs" && <RunsExplorer />}
+          {activeTab === "Leaderboard" && <LeaderboardView key={tabKey} />}
+          {activeTab === "Model Breakdown" && <ModelBreakdownView key={tabKey} />}
+          {activeTab === "Problems" && <ProblemExplorer key={tabKey} />}
+          {activeTab === "Runs" && <RunsExplorer key={tabKey} />}
           {activeTab === "GEPA Experiments" && (
             <GepaExperiments
+              key={tabKey}
               initialRunId={gepaRunId}
               onNavigate={(runId) => navigate("GEPA Experiments", runId)}
             />
           )}
-          {activeTab === "AutoResearch" && <AutoResearchView />}
+          {activeTab === "AutoResearch" && <AutoResearchView key={tabKey} />}
         </div>
       </main>
     </div>
