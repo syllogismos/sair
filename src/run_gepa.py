@@ -130,6 +130,7 @@ def main():
         print(f"Run ID: {observer.run_id} ({run_name})")
 
     dspy.configure(lm=student_lm, callbacks=[observer], num_threads=4)
+    observer.store_dataset_sizes(len(train), len(val))
 
     # Install real-time GEPA iteration tracking (must be before compile)
     observer.install_gepa_hooks()

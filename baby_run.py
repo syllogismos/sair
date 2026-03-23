@@ -59,6 +59,7 @@ if args.resume:
     )
     print(f"Resuming run: {args.resume}")
 
+observer.store_dataset_sizes(len(train), len(val))
 observer.install_gepa_hooks()
 tracked_metric = observer.wrap_metric(metric)
 dspy.configure(lm=student_lm, callbacks=[observer], num_threads=4)

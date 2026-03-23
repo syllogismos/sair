@@ -22,6 +22,8 @@ interface Run {
   total_errors: number;
   num_candidates?: number;
   best_score?: number;
+  val_size?: number;
+  train_size?: number;
 }
 
 interface CallGroup {
@@ -791,10 +793,7 @@ function LiveCandidates({ iterations }: { iterations: Iteration[] }) {
   );
 }
 
-function IterationsTimeline({ iterations, totalMetricCalls }: { iterations: Iteration[]; totalMetricCalls: number; }) {
-  // Infer valset size from base_eval — it consumes exactly valset_size metric calls
-  const baseEvtCalls = iterations.find((it) => it.event === "base_eval")?.total_metric_calls;
-  const valsetSize = baseEvtCalls || null;
+function IterationsTimeline({ iterations, totalMetricCalls, valSize }: { iterations: Iteration[]; totalMetricCalls: number; valSize: number | null; }) {
   if (iterations.length === 0) return null;
 
   // Group by iteration number
@@ -849,7 +848,7 @@ function IterationsTimeline({ iterations, totalMetricCalls }: { iterations: Iter
                   )}
                   {!baseEvt && totalMetricCalls > 0 && (
                     <span className="text-xs text-blue-300 ml-auto">
-                      {totalMetricCalls} evaluated so far
+                      {totalMetricCalls}{valSize ? ` / ${valSize}` : ""} evaluated
                     </span>
                   )}
                 </div>
@@ -972,7 +971,7 @@ function IterationsTimeline({ iterations, totalMetricCalls }: { iterations: Iter
                   Minibatch improved ({beforeEvt?.subsample_score?.toFixed(0)} → {afterEvt?.new_subsample_score?.toFixed(0)}). Running full valset evaluation...
                   {afterEvt?.total_metric_calls != null && totalMetricCalls > afterEvt.total_metric_calls && (
                     <span className="ml-2 text-blue-300">
-                      ({totalMetricCalls - afterEvt.total_metric_calls}{valsetSize ? ` / ${valsetSize}` : ""} evaluated)
+                      ({totalMetricCalls - afterEvt.total_metric_calls}{valSize ? ` / ${valSize}` : ""} evaluated)
                     </span>
                   )}
                 </div>
@@ -1157,6 +1156,7 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
           <IterationsTimeline
             iterations={iterations || []}
             totalMetricCalls={data.totalMetricCalls || 0}
+            valSize={(run as Run).val_size || null}
           />
 
           {/* Candidates — live from iterations if post-run data not available yet */}

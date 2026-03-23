@@ -37,7 +37,9 @@ class GEPAObserver(BaseCallback):
                 auto TEXT,
                 started_at REAL,
                 finished_at REAL,
-                status TEXT DEFAULT 'running'
+                status TEXT DEFAULT 'running',
+                train_size INTEGER,
+                val_size INTEGER
             );
             CREATE TABLE IF NOT EXISTS llm_calls (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -202,6 +204,13 @@ class GEPAObserver(BaseCallback):
                 )
 
         ExperimentTracker.log_metrics = patched_log_metrics
+
+    def store_dataset_sizes(self, train_size: int, val_size: int):
+        """Store train/val split sizes so the dashboard can show eval progress."""
+        self.db.execute(
+            "UPDATE runs SET train_size = ?, val_size = ? WHERE run_id = ?",
+            (train_size, val_size, self.run_id),
+        )
 
     def store_seed_instruction(self, solver):
         """Store the seed candidate's instruction so the dashboard can show it."""
