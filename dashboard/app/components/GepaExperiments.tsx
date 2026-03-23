@@ -975,10 +975,10 @@ function IterationsTimeline({ iterations, totalMetricCalls, valSize }: { iterati
                     <span>minibatch: {beforeEvt.subsample_score?.toFixed(0) ?? "?"} correct</span>
                   )}
                   {wasAccepted && acceptedEvt?.total_metric_calls != null && (
-                    <span> · budget used: {acceptedEvt.total_metric_calls}</span>
+                    <span> · budget used so far: {acceptedEvt.total_metric_calls}</span>
                   )}
                   {wasRejected && afterEvt?.total_metric_calls != null && (
-                    <span> · budget used: {afterEvt.total_metric_calls}</span>
+                    <span> · budget used so far: {afterEvt.total_metric_calls}</span>
                   )}
                 </span>
 
