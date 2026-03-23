@@ -488,12 +488,11 @@ function CandidatesTable({
   );
 }
 
-function ParetoSummary({ data }: { data: ParetoEntry[] }) {
+function ParetoSummary({ data, valSize }: { data: ParetoEntry[]; valSize: number | null }) {
   if (data.length === 0) return null;
 
   const counts = data.map((d) => d.frontier_count);
   const maxCount = Math.max(...counts);
-  const totalExamples = counts.reduce((s, c) => s + c, 0);
 
   return (
     <div>
@@ -516,7 +515,7 @@ function ParetoSummary({ data }: { data: ParetoEntry[] }) {
                   #{d.candidate_idx}
                 </td>
                 <td className="py-1.5 text-right text-zinc-400">
-                  {d.frontier_count} / {totalExamples}
+                  {d.frontier_count}{valSize ? ` / ${valSize}` : ""}
                 </td>
                 <td className="py-1.5 pl-4">
                   <div className="flex items-center gap-2">
@@ -1183,7 +1182,14 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
           <RecentMetricCalls data={recentMetricCalls} />
 
           {/* Pareto */}
-          <ParetoSummary data={paretoSummary} />
+          <ParetoSummary
+            data={paretoSummary}
+            valSize={
+              (run as Run).val_size ||
+              iterations?.find((it: Iteration) => it.event === "base_eval")?.total_metric_calls ||
+              null
+            }
+          />
 
           {/* Iterations timeline (real-time) */}
           <IterationsTimeline
