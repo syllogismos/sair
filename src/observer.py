@@ -316,7 +316,12 @@ class GEPAObserver(BaseCallback):
             )
 
         # Pareto frontier
-        for val_idx, best_set in enumerate(dr.per_val_instance_best_candidates):
+        pareto = dr.per_val_instance_best_candidates
+        if isinstance(pareto, dict):
+            items = pareto.items()
+        else:
+            items = enumerate(pareto)
+        for val_idx, best_set in items:
             if isinstance(best_set, (set, list, frozenset)):
                 idxs = sorted(best_set)
             else:
