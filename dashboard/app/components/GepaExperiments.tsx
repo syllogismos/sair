@@ -625,16 +625,20 @@ function LiveCandidates({ iterations }: { iterations: Iteration[] }) {
     iteration: number;
   }[] = [];
 
-  // Seed candidate (iteration with base_eval)
+  // Seed candidate — get instruction from seed_instruction event, score from base_eval
   const baseEvt = iterations.find((it) => it.event === "base_eval");
-  if (baseEvt) {
+  const seedEvt = iterations.find((it) => it.event === "seed_instruction");
+  if (baseEvt || seedEvt) {
+    const seedInstructions = seedEvt?.new_instructions
+      ? JSON.parse(seedEvt.new_instructions)
+      : {};
     liveCandidates.push({
       idx: 0,
       parentIdx: null,
-      instructions: {},
-      bestScore: baseEvt.best_score,
-      metricCalls: baseEvt.total_metric_calls,
-      iteration: baseEvt.iteration,
+      instructions: seedInstructions,
+      bestScore: baseEvt?.best_score ?? null,
+      metricCalls: baseEvt?.total_metric_calls ?? null,
+      iteration: baseEvt?.iteration ?? 0,
     });
   }
 
@@ -787,7 +791,7 @@ function LiveCandidates({ iterations }: { iterations: Iteration[] }) {
   );
 }
 
-function IterationsTimeline({ iterations }: { iterations: Iteration[] }) {
+function IterationsTimeline({ iterations, totalMetricCalls }: { iterations: Iteration[]; totalMetricCalls: number }) {
   if (iterations.length === 0) return null;
 
   // Group by iteration number
@@ -951,6 +955,11 @@ function IterationsTimeline({ iterations }: { iterations: Iteration[] }) {
               {isEvaluating && (
                 <div className="px-3 pb-2 text-xs text-blue-400/60">
                   Minibatch improved ({beforeEvt?.subsample_score?.toFixed(0)} → {afterEvt?.new_subsample_score?.toFixed(0)}). Running full valset evaluation...
+                  {afterEvt?.total_metric_calls != null && totalMetricCalls > afterEvt.total_metric_calls && (
+                    <span className="ml-2 text-blue-300">
+                      ({totalMetricCalls - afterEvt.total_metric_calls} / 253 evaluated)
+                    </span>
+                  )}
                 </div>
               )}
               {!wasAccepted && !wasRejected && !isEvaluating && !wasSkipped && beforeEvt && (
@@ -1008,6 +1017,7 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
     paretoSummary: ParetoEntry[];
     recentMetricCalls: MetricCall[];
     iterations: Iteration[];
+    totalMetricCalls: number;
   } | null>(null);
   const [viewCall, setViewCall] = useState<RecentCall | null>(null);
   const [activeSection, setActiveSection] = useState<
@@ -1129,7 +1139,10 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
           <ParetoSummary data={paretoSummary} />
 
           {/* Iterations timeline (real-time) */}
-          <IterationsTimeline iterations={iterations || []} />
+          <IterationsTimeline
+            iterations={iterations || []}
+            totalMetricCalls={data.totalMetricCalls || 0}
+          />
 
           {/* Candidates — live from iterations if post-run data not available yet */}
           {candidates.length > 0 ? (

@@ -137,6 +137,15 @@ export async function GET(request: NextRequest) {
         .all(param);
     }
 
+    // Total metric call count
+    let totalMetricCalls = 0;
+    if (tableExists(db, "gepa_metric_calls")) {
+      const row = db
+        .prepare("SELECT MAX(seq) as total FROM gepa_metric_calls WHERE run_id = ?")
+        .get(param) as { total: number } | undefined;
+      totalMetricCalls = row?.total || 0;
+    }
+
     // Recent metric calls (last 100)
     let recentMetricCalls: unknown[] = [];
     if (tableExists(db, "gepa_metric_calls")) {
@@ -176,6 +185,7 @@ export async function GET(request: NextRequest) {
       paretoSummary,
       recentMetricCalls,
       iterations,
+      totalMetricCalls,
     });
   }
 

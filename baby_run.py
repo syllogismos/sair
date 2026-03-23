@@ -69,6 +69,7 @@ if args.initial_prompt:
     for name, pred in solver.named_predictors():
         pred.signature = pred.signature.with_instructions(prompt_text)
     print(f"Initial prompt: {len(prompt_text)} bytes from {args.initial_prompt}")
+observer.store_seed_instruction(solver)
 
 optimizer = dspy.GEPA(
     metric=tracked_metric,

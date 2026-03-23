@@ -203,6 +203,19 @@ class GEPAObserver(BaseCallback):
 
         ExperimentTracker.log_metrics = patched_log_metrics
 
+    def store_seed_instruction(self, solver):
+        """Store the seed candidate's instruction so the dashboard can show it."""
+        instructions = {}
+        for name, pred in solver.named_predictors():
+            instructions[name] = str(pred.signature.instructions)
+        with self._db_lock:
+            self.db.execute(
+                """INSERT INTO gepa_iterations
+                   (run_id, timestamp, iteration, event, new_instructions)
+                   VALUES (?, ?, 0, 'seed_instruction', ?)""",
+                (self.run_id, time.time(), json.dumps(instructions)),
+            )
+
     # --- Real-time: metric wrapper ---
 
     def wrap_metric(self, metric_fn):

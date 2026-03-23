@@ -151,6 +151,7 @@ def main():
             pred.signature = pred.signature.with_instructions(prompt_text)
         print(f"Initial prompt: {len(prompt_text)} bytes from {args.initial_prompt}")
     print(f"Solver: {args.solver}")
+    observer.store_seed_instruction(solver)
 
     # Run GEPA
     print(f"\nStarting GEPA optimization (auto={args.auto})...")
