@@ -1189,7 +1189,11 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
           <IterationsTimeline
             iterations={iterations || []}
             totalMetricCalls={data.totalMetricCalls || 0}
-            valSize={(run as Run).val_size || null}
+            valSize={
+              (run as Run).val_size ||
+              iterations?.find((it: Iteration) => it.event === "base_eval")?.total_metric_calls ||
+              null
+            }
           />
 
           {/* Candidates — live from iterations if post-run data not available yet */}
