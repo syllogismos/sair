@@ -971,14 +971,14 @@ function IterationsTimeline({ iterations, totalMetricCalls, valSize }: { iterati
                 )}
 
                 <span className="text-xs text-zinc-600 ml-auto">
-                  {beforeEvt?.total_metric_calls != null && (
-                    <span>minibatch: {beforeEvt.subsample_score?.toFixed(0) ?? "?"} correct</span>
-                  )}
                   {wasAccepted && acceptedEvt?.total_metric_calls != null && (
-                    <span> · budget used so far: {acceptedEvt.total_metric_calls}</span>
+                    <span>budget used so far: {acceptedEvt.total_metric_calls}</span>
                   )}
                   {wasRejected && afterEvt?.total_metric_calls != null && (
-                    <span> · budget used so far: {afterEvt.total_metric_calls}</span>
+                    <span>budget used so far: {afterEvt.total_metric_calls}</span>
+                  )}
+                  {wasSkipped && selectEvt?.total_metric_calls != null && (
+                    <span>budget used so far: {selectEvt.total_metric_calls}</span>
                   )}
                 </span>
 
@@ -997,24 +997,28 @@ function IterationsTimeline({ iterations, totalMetricCalls, valSize }: { iterati
               )}
               {isEvaluating && (
                 <div className="px-3 pb-2 text-xs text-blue-400/60">
-                  Minibatch improved ({beforeEvt?.subsample_score?.toFixed(0)} → {afterEvt?.new_subsample_score?.toFixed(0)}). Running full valset evaluation...
+                  Minibatch ({selectEvt?.total_metric_calls != null && beforeEvt?.total_metric_calls != null
+                    ? `${beforeEvt.total_metric_calls - selectEvt.total_metric_calls} problems`
+                    : ""}): parent scored {beforeEvt?.subsample_score?.toFixed(0)}, new instruction scored {afterEvt?.new_subsample_score?.toFixed(0)} — improved. Running full valset evaluation...
                   {afterEvt?.total_metric_calls != null && totalMetricCalls > afterEvt.total_metric_calls && (
                     <span className="ml-2 text-blue-300">
-                      ({totalMetricCalls - afterEvt.total_metric_calls}{valSize ? ` / ${valSize}` : ""} evaluated)
+                      ({Math.min(totalMetricCalls - afterEvt.total_metric_calls, valSize || totalMetricCalls)}{valSize ? ` / ${valSize}` : ""} evaluated)
                     </span>
                   )}
                 </div>
               )}
               {!wasAccepted && !wasRejected && !isEvaluating && !wasSkipped && beforeEvt && (
                 <div className="px-3 pb-2 text-xs text-blue-400/60">
-                  Waiting for reflection LM response...
+                  Minibatch ({selectEvt?.total_metric_calls != null && beforeEvt?.total_metric_calls != null
+                    ? `${beforeEvt.total_metric_calls - selectEvt.total_metric_calls} problems`
+                    : ""}): parent scored {beforeEvt?.subsample_score?.toFixed(0)}. Waiting for reflection LM response...
                 </div>
               )}
               {wasRejected && !isExpanded && (
                 <div className="px-3 pb-2 text-xs text-zinc-600">
-                  Proposed instruction scored {afterEvt?.new_subsample_score?.toFixed(0) ?? "?"} on the minibatch
-                  {beforeEvt?.subsample_score != null && (<> (parent scored {beforeEvt.subsample_score.toFixed(0)})</>)}
-                  {" "}— GEPA requires strict improvement to accept.
+                  Minibatch ({selectEvt?.total_metric_calls != null && beforeEvt?.total_metric_calls != null
+                    ? `${beforeEvt.total_metric_calls - selectEvt.total_metric_calls} problems`
+                    : ""}): parent scored {beforeEvt?.subsample_score?.toFixed(0) ?? "?"}, new instruction scored {afterEvt?.new_subsample_score?.toFixed(0) ?? "?"} — not better, rejected.
                   {hasInstructions && " Click to see the rejected instruction."}
                 </div>
               )}
