@@ -201,6 +201,8 @@ function ResponseModal({
 // --- GEPA-specific components ---
 
 function AccuracyChart({ data }: { data: MetricBucket[] }) {
+  const [hovered, setHovered] = useState<number | null>(null);
+
   if (data.length === 0) return null;
 
   const W = 700;
@@ -218,7 +220,6 @@ function AccuracyChart({ data }: { data: MetricBucket[] }) {
   );
   const polyline = points.join(" ");
 
-  // Area under curve
   const areaPath = [
     `M ${xScale(data[0].bucket_start)},${yScale(0)}`,
     ...data.map((d) => `L ${xScale(d.bucket_start)},${yScale(d.accuracy)}`),
@@ -226,80 +227,89 @@ function AccuracyChart({ data }: { data: MetricBucket[] }) {
     "Z",
   ].join(" ");
 
-  // Y-axis ticks
   const yTicks = [0, 0.25, 0.5, 0.75, 1.0];
+  const hoveredData = hovered !== null ? data[hovered] : null;
 
   return (
     <div>
       <h3 className="text-sm font-medium text-zinc-400 mb-2">
         Evaluation Accuracy Over Time
       </h3>
-      <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 relative">
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 220 }}>
-          {/* Grid lines */}
           {yTicks.map((t) => (
             <g key={t}>
               <line
-                x1={PAD.left}
-                y1={yScale(t)}
-                x2={W - PAD.right}
-                y2={yScale(t)}
-                stroke="#27272a"
-                strokeWidth={1}
+                x1={PAD.left} y1={yScale(t)}
+                x2={W - PAD.right} y2={yScale(t)}
+                stroke="#27272a" strokeWidth={1}
               />
               <text
-                x={PAD.left - 6}
-                y={yScale(t) + 4}
-                textAnchor="end"
-                className="fill-zinc-500"
-                fontSize={10}
+                x={PAD.left - 6} y={yScale(t) + 4}
+                textAnchor="end" className="fill-zinc-500" fontSize={10}
               >
                 {(t * 100).toFixed(0)}%
               </text>
             </g>
           ))}
 
-          {/* X axis label */}
           <text
-            x={PAD.left + plotW / 2}
-            y={H - 4}
-            textAnchor="middle"
-            className="fill-zinc-500"
-            fontSize={10}
+            x={PAD.left + plotW / 2} y={H - 4}
+            textAnchor="middle" className="fill-zinc-500" fontSize={10}
           >
             Metric calls
           </text>
 
-          {/* Area fill */}
           <path d={areaPath} fill="url(#accuracyGrad)" opacity={0.3} />
 
-          {/* Line */}
           <polyline
-            points={polyline}
-            fill="none"
-            stroke="#6366f1"
-            strokeWidth={2}
-            strokeLinejoin="round"
+            points={polyline} fill="none"
+            stroke="#6366f1" strokeWidth={2} strokeLinejoin="round"
           />
 
-          {/* Dots */}
+          {/* Hover targets — larger invisible circles for easier hovering */}
+          {data.map((d, i) => (
+            <circle
+              key={`hover-${i}`}
+              cx={xScale(d.bucket_start)}
+              cy={yScale(d.accuracy)}
+              r={12}
+              fill="transparent"
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
+              className="cursor-pointer"
+            />
+          ))}
+
+          {/* Visible dots */}
           {data.map((d, i) => (
             <circle
               key={i}
               cx={xScale(d.bucket_start)}
               cy={yScale(d.accuracy)}
-              r={3}
-              fill="#6366f1"
+              r={hovered === i ? 5 : 3}
+              fill={hovered === i ? "#818cf8" : "#6366f1"}
               stroke="#09090b"
               strokeWidth={1}
-            >
-              <title>
-                Calls {d.bucket_start}–{d.bucket_start + 19}: {d.correct}/{d.calls} correct ({(d.accuracy * 100).toFixed(1)}%)
-              </title>
-            </circle>
+              className="pointer-events-none"
+            />
           ))}
 
-          {/* Gradient def */}
+          {/* Hover crosshair */}
+          {hoveredData && (
+            <line
+              x1={xScale(hoveredData.bucket_start)}
+              y1={PAD.top}
+              x2={xScale(hoveredData.bucket_start)}
+              y2={PAD.top + plotH}
+              stroke="#6366f1"
+              strokeWidth={1}
+              strokeDasharray="3,3"
+              opacity={0.4}
+              className="pointer-events-none"
+            />
+          )}
+
           <defs>
             <linearGradient id="accuracyGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#6366f1" stopOpacity={0.4} />
@@ -307,6 +317,21 @@ function AccuracyChart({ data }: { data: MetricBucket[] }) {
             </linearGradient>
           </defs>
         </svg>
+
+        {/* Hover tooltip */}
+        {hoveredData && (
+          <div className="absolute top-2 right-3 bg-[#09090b] border border-zinc-700 rounded-lg px-3 py-2 text-xs pointer-events-none">
+            <div className="text-zinc-400">
+              Calls {hoveredData.bucket_start}–{hoveredData.bucket_start + 19}
+            </div>
+            <div className="text-indigo-400 font-medium text-sm">
+              {(hoveredData.accuracy * 100).toFixed(1)}%
+            </div>
+            <div className="text-zinc-500">
+              {hoveredData.correct}/{hoveredData.calls} correct
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
