@@ -32,7 +32,7 @@ def make_student_lm(model: str = "vertex_ai/gemini-2.5-flash-lite") -> dspy.LM:
     return dspy.LM(
         model=model,
         temperature=0.0,
-        max_tokens=12000,
+        max_tokens=20000,
         num_retries=8,
     )
 
