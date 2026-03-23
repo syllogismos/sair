@@ -822,7 +822,8 @@ function IterationsTimeline({ iterations, totalMetricCalls }: { iterations: Iter
           const acceptedEvt = events.find((e) => e.event === "candidate_accepted");
           const baseEvt = events.find((e) => e.event === "base_eval");
 
-          if (baseEvt) {
+          const seedEvt = events.find((e) => e.event === "seed_instruction");
+          if (baseEvt || seedEvt || (iterNum === 0 && !selectEvt)) {
             return (
               <div
                 key={iterNum}
@@ -832,12 +833,23 @@ function IterationsTimeline({ iterations, totalMetricCalls }: { iterations: Iter
                   <span className="text-xs font-mono text-zinc-500">
                     iter {iterNum}
                   </span>
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-300">
-                    Base evaluation
-                  </span>
-                  {baseEvt.best_score != null && (
+                  {baseEvt ? (
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-300">
+                      Base evaluation
+                    </span>
+                  ) : (
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                      Base evaluation in progress...
+                    </span>
+                  )}
+                  {baseEvt?.best_score != null && (
                     <span className="text-xs text-zinc-400 ml-auto">
                       score: {((baseEvt.best_score) * 100).toFixed(1)}%
+                    </span>
+                  )}
+                  {!baseEvt && totalMetricCalls > 0 && (
+                    <span className="text-xs text-blue-300 ml-auto">
+                      {totalMetricCalls} evaluated so far
                     </span>
                   )}
                 </div>
