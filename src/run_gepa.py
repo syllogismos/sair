@@ -69,6 +69,7 @@ def main():
     parser.add_argument("--log-dir", default=str(PROJECT_ROOT / "gepa_logs"))
     parser.add_argument("--db-path", default=str(PROJECT_ROOT / "gepa_observations.db"))
     parser.add_argument("--resume", default=None, help="Run ID to resume (reuses its log_dir for GEPA checkpoint)")
+    parser.add_argument("--initial-prompt", default=None, help="Path to text file with initial instruction for the solver")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -144,6 +145,11 @@ def main():
 
     # Create solver
     solver = make_solver(args.solver, cheatsheet=cheatsheet)
+    if args.initial_prompt:
+        prompt_text = Path(args.initial_prompt).read_text()
+        for name, pred in solver.named_predictors():
+            pred.signature = pred.signature.with_instructions(prompt_text)
+        print(f"Initial prompt: {len(prompt_text)} bytes from {args.initial_prompt}")
     print(f"Solver: {args.solver}")
 
     # Run GEPA
