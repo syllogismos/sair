@@ -68,6 +68,7 @@ def main():
     parser.add_argument("--use-cc", action="store_true", help="Use Claude Code SDK for reflection instead of Vertex AI")
     parser.add_argument("--log-dir", default=str(PROJECT_ROOT / "gepa_logs"))
     parser.add_argument("--db-path", default=str(PROJECT_ROOT / "gepa_observations.db"))
+    parser.add_argument("--resume", default=None, help="Run ID to resume (reuses its log_dir for GEPA checkpoint)")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -114,7 +115,19 @@ def main():
         student_model=args.student_model,
         reflection_model=reflection_model_name,
     )
-    print(f"Run ID: {observer.run_id} ({run_name})")
+
+    if args.resume:
+        # Reuse the old run_id so dashboard data stays in one place
+        # GEPA resumes from checkpoint via the old log_dir
+        observer.run_id = args.resume
+        observer.db.execute(
+            "UPDATE runs SET status = 'running', finished_at = NULL WHERE run_id = ?",
+            (args.resume,),
+        )
+        print(f"Resuming run: {args.resume}")
+    else:
+        print(f"Run ID: {observer.run_id} ({run_name})")
+
     dspy.configure(lm=student_lm, callbacks=[observer], num_threads=4)
 
     # Install real-time GEPA iteration tracking (must be before compile)
@@ -144,7 +157,7 @@ def main():
         reflection_lm=reflection_lm,
         reflection_minibatch_size=args.minibatch_size,
         track_stats=True,
-        log_dir=str(Path(args.log_dir) / observer.run_id),
+        log_dir=str(Path(args.log_dir) / (args.resume or observer.run_id)),
         seed=args.seed,
         failure_score=0.0,
     )
