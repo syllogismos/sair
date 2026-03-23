@@ -209,7 +209,7 @@ function AccuracyChart({ data }: { data: MetricBucket[] }) {
 
   const W = 700;
   const H = 200;
-  const PAD = { top: 20, right: 20, bottom: 30, left: 45 };
+  const PAD = { top: 20, right: 20, bottom: 40, left: 45 };
   const plotW = W - PAD.left - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
 
@@ -255,11 +255,32 @@ function AccuracyChart({ data }: { data: MetricBucket[] }) {
             </g>
           ))}
 
+          {/* X axis ticks */}
+          {(() => {
+            const step = Math.max(1, Math.ceil(maxX / 200) * 50);
+            const ticks = [];
+            for (let v = step; v < maxX; v += step) ticks.push(v);
+            return ticks.map((v) => (
+              <g key={`x-${v}`}>
+                <line
+                  x1={xScale(v)} y1={PAD.top + plotH}
+                  x2={xScale(v)} y2={PAD.top + plotH + 4}
+                  stroke="#3f3f46" strokeWidth={1}
+                />
+                <text
+                  x={xScale(v)} y={H - 6}
+                  textAnchor="middle" className="fill-zinc-500" fontSize={9}
+                >
+                  {v}
+                </text>
+              </g>
+            ));
+          })()}
           <text
             x={PAD.left + plotW / 2} y={H - 4}
-            textAnchor="middle" className="fill-zinc-500" fontSize={10}
+            textAnchor="middle" className="fill-zinc-600" fontSize={8}
           >
-            Metric calls
+            metric calls
           </text>
 
           <path d={areaPath} fill="url(#accuracyGrad)" opacity={0.3} />
