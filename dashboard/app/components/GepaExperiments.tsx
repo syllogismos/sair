@@ -814,8 +814,11 @@ function IterationsTimeline({ iterations }: { iterations: Iteration[] }) {
           }
 
           const wasAccepted = !!acceptedEvt;
-          const wasRejected = !wasAccepted && !!afterEvt;
-          const wasSkipped = !afterEvt && !wasAccepted;
+          const improved = !!afterEvt && !!beforeEvt &&
+            (afterEvt.new_subsample_score ?? 0) > (beforeEvt.subsample_score ?? 0);
+          const wasRejected = !wasAccepted && !!afterEvt && !improved;
+          const isEvaluating = !wasAccepted && !!afterEvt && improved;
+          const wasSkipped = !afterEvt && !wasAccepted && !beforeEvt;
           const instructions = proposalEvt?.new_instructions
             ? JSON.parse(proposalEvt.new_instructions)
             : null;
@@ -865,12 +868,17 @@ function IterationsTimeline({ iterations }: { iterations: Iteration[] }) {
                     rejected
                   </span>
                 )}
-                {wasSkipped && !beforeEvt && (
+                {isEvaluating && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                    full valset eval...
+                  </span>
+                )}
+                {wasSkipped && (
                   <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-700/50 text-zinc-500">
                     skipped
                   </span>
                 )}
-                {wasSkipped && beforeEvt && (
+                {!wasAccepted && !wasRejected && !isEvaluating && !wasSkipped && beforeEvt && (
                   <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
                     in progress...
                   </span>
@@ -879,15 +887,16 @@ function IterationsTimeline({ iterations }: { iterations: Iteration[] }) {
                 {/* Scores */}
                 {beforeEvt?.subsample_score != null && afterEvt?.new_subsample_score != null && (
                   <span className="text-xs text-zinc-500">
-                    {beforeEvt.subsample_score.toFixed(0)}/3
+                    {beforeEvt.subsample_score.toFixed(0)}
                     <span className="text-zinc-600 mx-1">→</span>
                     <span className={
                       afterEvt.new_subsample_score > beforeEvt.subsample_score
                         ? "text-emerald-400"
                         : "text-red-400"
                     }>
-                      {afterEvt.new_subsample_score.toFixed(0)}/3
+                      {afterEvt.new_subsample_score.toFixed(0)}
                     </span>
+                    <span className="text-zinc-600"> / minibatch</span>
                   </span>
                 )}
 
@@ -909,12 +918,17 @@ function IterationsTimeline({ iterations }: { iterations: Iteration[] }) {
               </div>
 
               {/* Detail — reason for skip/reject */}
-              {wasSkipped && !beforeEvt && (
+              {wasSkipped && (
                 <div className="px-3 pb-2 text-xs text-zinc-600">
                   Minibatch scored perfectly — no failures to learn from, skipping reflection.
                 </div>
               )}
-              {wasSkipped && beforeEvt && (
+              {isEvaluating && (
+                <div className="px-3 pb-2 text-xs text-blue-400/60">
+                  Minibatch improved ({beforeEvt?.subsample_score?.toFixed(0)} → {afterEvt?.new_subsample_score?.toFixed(0)}). Running full valset evaluation...
+                </div>
+              )}
+              {!wasAccepted && !wasRejected && !isEvaluating && !wasSkipped && beforeEvt && (
                 <div className="px-3 pb-2 text-xs text-blue-400/60">
                   Waiting for reflection LM response...
                 </div>
