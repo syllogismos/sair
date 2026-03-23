@@ -791,7 +791,10 @@ function LiveCandidates({ iterations }: { iterations: Iteration[] }) {
   );
 }
 
-function IterationsTimeline({ iterations, totalMetricCalls }: { iterations: Iteration[]; totalMetricCalls: number }) {
+function IterationsTimeline({ iterations, totalMetricCalls }: { iterations: Iteration[]; totalMetricCalls: number; }) {
+  // Infer valset size from base_eval — it consumes exactly valset_size metric calls
+  const baseEvtCalls = iterations.find((it) => it.event === "base_eval")?.total_metric_calls;
+  const valsetSize = baseEvtCalls || null;
   if (iterations.length === 0) return null;
 
   // Group by iteration number
@@ -957,7 +960,7 @@ function IterationsTimeline({ iterations, totalMetricCalls }: { iterations: Iter
                   Minibatch improved ({beforeEvt?.subsample_score?.toFixed(0)} → {afterEvt?.new_subsample_score?.toFixed(0)}). Running full valset evaluation...
                   {afterEvt?.total_metric_calls != null && totalMetricCalls > afterEvt.total_metric_calls && (
                     <span className="ml-2 text-blue-300">
-                      ({totalMetricCalls - afterEvt.total_metric_calls} / 253 evaluated)
+                      ({totalMetricCalls - afterEvt.total_metric_calls}{valsetSize ? ` / ${valsetSize}` : ""} evaluated)
                     </span>
                   )}
                 </div>
@@ -969,8 +972,8 @@ function IterationsTimeline({ iterations, totalMetricCalls }: { iterations: Iter
               )}
               {wasRejected && !isExpanded && (
                 <div className="px-3 pb-2 text-xs text-zinc-600">
-                  Proposed instruction scored {afterEvt?.new_subsample_score?.toFixed(0) ?? "?"}/3 on the minibatch
-                  {beforeEvt?.subsample_score != null && (<> (parent scored {beforeEvt.subsample_score.toFixed(0)}/3)</>)}
+                  Proposed instruction scored {afterEvt?.new_subsample_score?.toFixed(0) ?? "?"} on the minibatch
+                  {beforeEvt?.subsample_score != null && (<> (parent scored {beforeEvt.subsample_score.toFixed(0)})</>)}
                   {" "}— GEPA requires strict improvement to accept.
                   {hasInstructions && " Click to see the rejected instruction."}
                 </div>
