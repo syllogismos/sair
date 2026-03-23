@@ -28,7 +28,7 @@ def setup_vertex_ai():
     os.environ.setdefault("VERTEXAI_LOCATION", region)
 
 
-def make_student_lm(model: str = "vertex_ai/gemini-3.1-flash-lite-preview") -> dspy.LM:
+def make_student_lm(model: str = "vertex_ai/gemini-2.5-flash-lite") -> dspy.LM:
     return dspy.LM(
         model=model,
         temperature=0.0,
@@ -59,6 +59,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run GEPA optimization")
     parser.add_argument("--solver", default="v1", choices=["v1", "v2", "v3"])
     parser.add_argument("--auto", default="light", choices=["light", "medium", "heavy"])
+    parser.add_argument("--max-metric-calls", type=int, default=None, help="Override auto budget with exact metric call limit")
     parser.add_argument("--cheatsheet", default=None, help="Path to cheatsheet text file")
     parser.add_argument("--student-model", default="vertex_ai/gemini-2.5-flash-lite")
     parser.add_argument("--reflection-model", default="vertex_ai/gemini-3.1-pro-preview")
@@ -136,15 +137,20 @@ def main():
     print(f"Observations DB: {args.db_path}")
     print()
 
-    optimizer = dspy.GEPA(
+    gepa_kwargs = dict(
         metric=tracked_metric,
         reflection_lm=reflection_lm,
-        auto=args.auto,
         track_stats=True,
         log_dir=str(Path(args.log_dir) / observer.run_id),
         seed=args.seed,
         failure_score=0.0,
     )
+    if args.max_metric_calls:
+        gepa_kwargs["max_metric_calls"] = args.max_metric_calls
+    else:
+        gepa_kwargs["auto"] = args.auto
+
+    optimizer = dspy.GEPA(**gepa_kwargs)
 
     try:
         with dspy.track_usage() as usage:
