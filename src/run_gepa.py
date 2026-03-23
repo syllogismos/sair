@@ -60,6 +60,7 @@ def main():
     parser.add_argument("--solver", default="v1", choices=["v1", "v2", "v3"])
     parser.add_argument("--auto", default="light", choices=["light", "medium", "heavy"])
     parser.add_argument("--max-metric-calls", type=int, default=None, help="Override auto budget with exact metric call limit")
+    parser.add_argument("--minibatch-size", type=int, default=10, help="Number of training examples per reflection minibatch")
     parser.add_argument("--cheatsheet", default=None, help="Path to cheatsheet text file")
     parser.add_argument("--student-model", default="vertex_ai/gemini-2.5-flash-lite")
     parser.add_argument("--reflection-model", default="vertex_ai/gemini-3.1-pro-preview")
@@ -140,6 +141,7 @@ def main():
     gepa_kwargs = dict(
         metric=tracked_metric,
         reflection_lm=reflection_lm,
+        reflection_minibatch_size=args.minibatch_size,
         track_stats=True,
         log_dir=str(Path(args.log_dir) / observer.run_id),
         seed=args.seed,
