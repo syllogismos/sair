@@ -37,7 +37,7 @@ set_reference_solutions(refs)
 print(f"  {len(refs)} reference solutions loaded")
 
 # LMs — same as run_gepa.py defaults
-student_lm = dspy.LM("vertex_ai/gemini-2.5-flash-lite", temperature=0.0, num_retries=8)
+student_lm = dspy.LM("vertex_ai/gemini-2.5-flash-lite", temperature=0.0, max_tokens=8192, num_retries=8)
 reflection_lm = dspy.LM("vertex_ai/gemini-3.1-pro-preview", temperature=1.0, num_retries=8)
 
 # Observer
