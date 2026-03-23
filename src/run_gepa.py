@@ -199,10 +199,15 @@ def main():
     for role, stats in observer.get_summary().items():
         print(f"  {role}: {stats}")
 
-    # Save optimized program
-    output_path = PROJECT_ROOT / "optimized_solver.json"
-    optimized.save(str(output_path))
-    print(f"\nOptimized solver saved to: {output_path}")
+    # Save optimized program — in the run's log dir and at project root
+    run_log_dir = Path(args.log_dir) / (args.resume or observer.run_id)
+    run_output = run_log_dir / "optimized_solver.json"
+    optimized.save(str(run_output))
+    print(f"\nOptimized solver saved to: {run_output}")
+
+    # Also save at project root for convenience (overwritten by each run)
+    root_output = PROJECT_ROOT / "optimized_solver.json"
+    optimized.save(str(root_output))
 
     # Print optimized instructions
     print("\n=== Optimized Instructions ===")
