@@ -32,7 +32,7 @@ def make_student_lm(model: str = "vertex_ai/gemini-2.5-flash-lite") -> dspy.LM:
     return dspy.LM(
         model=model,
         temperature=0.0,
-        num_retries=3,
+        num_retries=8,
     )
 
 
@@ -40,7 +40,7 @@ def make_reflection_lm(model: str = "vertex_ai/gemini-3.1-pro-preview") -> dspy.
     return dspy.LM(
         model=model,
         temperature=1.0,
-        num_retries=3,
+        num_retries=8,
     )
 
 
@@ -113,7 +113,7 @@ def main():
         reflection_model=reflection_model_name,
     )
     print(f"Run ID: {observer.run_id} ({run_name})")
-    dspy.configure(lm=student_lm, callbacks=[observer])
+    dspy.configure(lm=student_lm, callbacks=[observer], num_threads=4)
 
     # Install real-time GEPA iteration tracking (must be before compile)
     observer.install_gepa_hooks()
