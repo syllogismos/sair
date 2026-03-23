@@ -865,9 +865,14 @@ function IterationsTimeline({ iterations }: { iterations: Iteration[] }) {
                     rejected
                   </span>
                 )}
-                {wasSkipped && (
+                {wasSkipped && !beforeEvt && (
                   <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-700/50 text-zinc-500">
                     skipped
+                  </span>
+                )}
+                {wasSkipped && beforeEvt && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                    in progress...
                   </span>
                 )}
 
@@ -904,9 +909,14 @@ function IterationsTimeline({ iterations }: { iterations: Iteration[] }) {
               </div>
 
               {/* Detail — reason for skip/reject */}
-              {wasSkipped && (
+              {wasSkipped && !beforeEvt && (
                 <div className="px-3 pb-2 text-xs text-zinc-600">
                   Minibatch scored perfectly — no failures to learn from, skipping reflection.
+                </div>
+              )}
+              {wasSkipped && beforeEvt && (
+                <div className="px-3 pb-2 text-xs text-blue-400/60">
+                  Waiting for reflection LM response...
                 </div>
               )}
               {wasRejected && !isExpanded && (
