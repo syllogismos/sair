@@ -971,7 +971,19 @@ function IterationsTimeline({ iterations, totalMetricCalls, valSize }: { iterati
                 )}
 
                 <span className="text-xs text-zinc-600 ml-auto">
-                  @{events[events.length - 1]?.total_metric_calls ?? "?"} calls
+                  {(() => {
+                    const endCalls = events[events.length - 1]?.total_metric_calls;
+                    if (endCalls == null) return "";
+                    // Find the previous iteration's last metric count
+                    const prevIters = [...byIteration.entries()]
+                      .filter(([n]) => n < iterNum)
+                      .sort(([a], [b]) => b - a);
+                    const prevCalls = prevIters.length > 0
+                      ? prevIters[0][1][prevIters[0][1].length - 1]?.total_metric_calls ?? 0
+                      : 0;
+                    const delta = endCalls - prevCalls;
+                    return `+${delta} calls (total: ${endCalls})`;
+                  })()}
                 </span>
 
                 {hasInstructions && (
