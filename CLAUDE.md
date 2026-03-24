@@ -81,3 +81,154 @@ Next.js app (React 19, Tailwind 4) for exploring benchmark data. Reads SQLite fo
 - `benchmark_cells` — 20,000 aggregated model/problem pairs
 - `benchmark_benchmarks` — 4 benchmark configs
 - `benchmark_prompt_templates` — prompt template metadata
+
+### Downloading data
+
+```bash
+# Install HuggingFace CLI if not present
+uv pip install huggingface_hub
+
+# Problems dataset
+.venv/bin/hf download SAIRfoundation/equational-theories-selected-problems --local-dir data/
+
+# Benchmark dataset (~265MB, needed for reference solutions in metric feedback)
+.venv/bin/hf download SAIRfoundation/equational-theories-benchmark --local-dir data/
+```
+
+**Expected JSONL format** (one JSON object per line):
+```json
+{"id": "normal_0001", "index": 1, "difficulty": "normal", "equation1": "x = ...", "equation2": "x * y = ...", "answer": true}
+```
+
+The `answer` field must be a JSON boolean (`true`/`false`), not a string. The scripts handle both but booleans are expected.
+
+Note: benchmark reference solutions only cover 200 normal + 200 hard problems (not all 1,269). Problems without reference solutions get generic fallback feedback.
+
+## Running GEPA Optimization
+
+### Baby run (for testing)
+
+```bash
+# Basic — tests the full pipeline with 20 problems and 60 metric calls
+uv run python baby_run.py
+
+# With a seed prompt — start optimization from a hand-crafted instruction
+uv run python baby_run.py --initial-prompt src/seed_prompt_iter3_39e2654730fd.txt
+```
+
+### Full run
+
+```bash
+# Light budget (~1,724 metric calls, ~6 candidates, ~$5-6)
+uv run python src/run_gepa.py --solver v1 --auto light
+
+# With seed prompt
+uv run python src/run_gepa.py --solver v1 --auto light --initial-prompt src/seed_prompt_iter3_39e2654730fd.txt
+
+# Heavy budget (~3,210 metric calls, ~18 candidates, ~$9-12)
+uv run python src/run_gepa.py --solver v1 --auto heavy
+
+# Custom budget
+uv run python src/run_gepa.py --solver v1 --max-metric-calls 500
+
+# Resume a previous run
+uv run python src/run_gepa.py --solver v1 --auto light --resume <run_id>
+
+# Use different models
+uv run python src/run_gepa.py --solver v1 --auto light \
+  --student-model vertex_ai/gemini-2.5-flash-lite \
+  --reflection-model vertex_ai/gemini-3.1-pro-preview
+```
+
+### Hyperparameters
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--solver` | `v1` | Solver architecture: `v1` (single step), `v2` (with cheatsheet), `v3` (two-step) |
+| `--auto` | `light` | Budget: `light` (6 candidates, ~1,724 calls), `medium` (12, ~2,410), `heavy` (18, ~3,210) |
+| `--max-metric-calls` | None | Override `--auto` with exact metric call budget |
+| `--minibatch-size` | `10` | Training examples per reflection minibatch |
+| `--student-model` | `vertex_ai/gemini-2.5-flash-lite` | Student LM. Use any litellm-compatible model string |
+| `--reflection-model` | `vertex_ai/gemini-3.1-pro-preview` | Reflection LM |
+| `--initial-prompt` | None | Text file with seed instruction (GEPA optimizes from here) |
+| `--resume` | None | Run ID to resume (reuses checkpoint and dashboard data) |
+| `--cheatsheet` | None | Text file for v2/v3 solvers |
+| `--seed` | `42` | RNG seed |
+| `--use-cc` | false | Use Claude Code SDK for reflection (slow — see `cc_adapter.py` warning) |
+
+### Using your own models
+
+The scripts use Vertex AI by default but you can use any provider litellm supports:
+
+```bash
+# OpenAI
+uv run python src/run_gepa.py --solver v1 --auto light \
+  --student-model openai/gpt-4o-mini \
+  --reflection-model openai/gpt-4o
+
+# Anthropic (requires ANTHROPIC_API_KEY)
+uv run python src/run_gepa.py --solver v1 --auto light \
+  --student-model anthropic/claude-haiku-4-5-20251001 \
+  --reflection-model anthropic/claude-sonnet-4-6
+
+# Together AI (requires TOGETHER_API_KEY)
+uv run python src/run_gepa.py --solver v1 --auto light \
+  --student-model together_ai/meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo \
+  --reflection-model together_ai/meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo
+```
+
+Set the corresponding API key environment variable for your provider. No Claude Code or Vertex AI account needed.
+
+### Train/val split
+
+All problems (normal + hard1 + hard2 = 1,269) are combined and split 80/20 into train (1,016) / val (253), balanced by answer and deterministic via `--seed`.
+
+### Run outputs
+
+- `gepa_logs/<run_id>/gepa_state.bin` — GEPA checkpoint (for `--resume`)
+- `gepa_logs/<run_id>/optimized_solver.json` — best candidate's DSPy module
+- `optimized_solver.json` (project root) — latest run's best (overwritten each run)
+- `gepa_observations.db` — SQLite with all tracking data (LLM calls, metrics, iterations, candidates, Pareto)
+
+## Exporting a Submission
+
+```bash
+# From a specific run
+uv run python src/export.py --solver-path gepa_logs/<run_id>/optimized_solver.json --solver-version v1 --output submission.txt
+
+# From latest run
+uv run python src/export.py --solver-path optimized_solver.json --solver-version v1 --output submission.txt
+```
+
+The output is a Jinja2 template (max 10KB). The competition evaluator replaces `{{ equation1 }}` and `{{ equation2 }}` with actual equations and sends the full text as the prompt.
+
+**Note:** DSPy wraps instructions with structured output formatting during GEPA optimization, but the competition uses a simpler format (just the template text). The instruction content is the same but the wrapper differs.
+
+## Dashboard
+
+### Starting
+
+```bash
+cd dashboard && npm run dev -- -p 3001
+```
+
+Open http://localhost:3001
+
+### Data sources
+
+1. **`gepa_observations.db`** (project root) — written by `observer.py` during GEPA runs
+   - Tables: `runs`, `llm_calls`, `gepa_metric_calls`, `gepa_iterations`, `gepa_candidates`, `gepa_candidate_scores`, `gepa_pareto`
+   - Feeds the **GEPA Experiments** tab
+
+2. **`dashboard/data.db`** — pre-built from HuggingFace benchmark data
+   - Feeds the **Leaderboard**, **Model Breakdown**, **Problems**, and **Runs** tabs
+
+### Features
+
+- **GEPA Experiments** — live tracking of runs. Accuracy chart, metric evaluations (clickable dots with feedback), iteration timeline (proposed instructions, accept/reject/skip), candidate programs, Pareto frontier. Auto-refreshes every 3s while a run is active.
+- **Leaderboard** — benchmark model scores
+- **Model Breakdown** — per-model analysis
+- **Problems** — problem explorer
+- **Runs** — individual benchmark runs with problem search and accuracy filtering
+
+URL routing uses hash (`#gepa`, `#gepa/<run_id>`, `#leaderboard`, etc.). Refreshing preserves the current view.

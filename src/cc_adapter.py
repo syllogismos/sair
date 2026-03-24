@@ -2,6 +2,16 @@
 
 Uses the Claude Code subscription auth (no API key needed).
 Spawns the claude CLI as a subprocess via claude_agent_sdk.
+
+WARNING: Each LLM call spawns a new Claude CLI subprocess. This is very slow
+(~10-30s per call) and creates a session file in ~/.claude/ for every call.
+Only suitable for the reflection LM (few calls). Do NOT use as the student LM
+for GEPA optimization — use a direct API (Vertex AI, Anthropic API) instead.
+
+TODO: Rewrite to use ClaudeSDKClient with connect/disconnect for a persistent
+session across the entire training run, instead of spawning a new subprocess
+per call. ClaudeSDKClient supports connect(), query(), and disconnect() which
+would eliminate the per-call subprocess overhead.
 """
 import asyncio
 from dataclasses import dataclass, field
