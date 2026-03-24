@@ -89,34 +89,38 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="border-b border-[#27272a] px-6 py-4">
+      <header className="border-b border-[#1e1e24] px-6 py-4" style={{ background: "linear-gradient(180deg, #111114 0%, #0c0c0f 100%)" }}>
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-xl font-semibold tracking-tight">
+              <h1 className="text-lg font-semibold tracking-tight text-zinc-100">
                 Equational Theories Dashboard
               </h1>
-              <p className="text-sm text-[#a1a1aa] mt-0.5">
+              <p className="text-[11px] text-zinc-600 mt-0.5 tracking-wide">
                 SAIR Mathematics Distillation Challenge — Stage 1
               </p>
             </div>
             {isLoading && (
-              <div className="flex items-center gap-1.5 ml-3 px-2 py-1 rounded bg-[#18181b] border border-[#27272a]">
-                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                <span className="text-xs text-zinc-500">loading</span>
+              <div className="flex items-center gap-1.5 ml-3 px-2.5 py-1 rounded-md bg-[#0c0c0f] border border-[#1e1e24]">
+                <div className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse shadow-[0_0_6px_rgba(56,189,248,0.4)]" />
+                <span className="text-[10px] text-zinc-600 uppercase tracking-wider">loading</span>
               </div>
             )}
           </div>
-          <div className="flex items-center gap-1 bg-[#18181b] rounded-lg p-1 border border-[#27272a]">
+          <div className="flex items-center gap-0.5 bg-[#0c0c0f] rounded-lg p-1 border border-[#1e1e24]">
             {TABS.map((tab) => (
               <button
                 key={tab}
                 onClick={() => navigate(tab)}
-                className={`px-3 py-1.5 text-sm rounded-md transition-all ${
+                className={`px-3 py-1.5 text-[11px] rounded-md transition-all ${
                   activeTab === tab
-                    ? "bg-[#6366f1] text-white font-medium"
-                    : "text-[#a1a1aa] hover:text-white hover:bg-[#27272a]"
+                    ? "text-sky-300 font-semibold"
+                    : "text-zinc-600 hover:text-zinc-300 hover:bg-white/[0.02]"
                 }`}
+                style={activeTab === tab ? {
+                  background: "linear-gradient(135deg, rgba(14,165,233,0.15), rgba(56,189,248,0.08))",
+                  boxShadow: "0 0 10px rgba(56,189,248,0.08), inset 0 0 0 1px rgba(56,189,248,0.15)",
+                } : undefined}
               >
                 {tab}
               </button>

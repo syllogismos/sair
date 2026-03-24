@@ -95,18 +95,18 @@ export default function LeaderboardView() {
   );
 
   if (data.length === 0)
-    return <div className="text-[#a1a1aa] py-12 text-center">Loading...</div>;
+    return <div className="text-zinc-500 py-12 text-center">Loading...</div>;
 
   return (
     <div className="space-y-6">
       {/* Controls */}
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <label className="text-sm text-[#a1a1aa]">Benchmark:</label>
+          <label className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500">Benchmark:</label>
           <select
             value={selectedBenchmark}
             onChange={(e) => setSelectedBenchmark(e.target.value)}
-            className="bg-[#18181b] border border-[#27272a] rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-[#6366f1]"
+            className="bg-[#0c0c0f] border border-[#1e1e24] rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-sky-800/50"
           >
             {benchmarks.map((b) => (
               <option key={b} value={b}>
@@ -116,11 +116,11 @@ export default function LeaderboardView() {
           </select>
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-sm text-[#a1a1aa]">Sort by:</label>
+          <label className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500">Sort by:</label>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-            className="bg-[#18181b] border border-[#27272a] rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-[#6366f1]"
+            className="bg-[#0c0c0f] border border-[#1e1e24] rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-sky-800/50"
           >
             <option value="accuracy">Accuracy</option>
             <option value="f1_score">F1 Score</option>
@@ -130,24 +130,25 @@ export default function LeaderboardView() {
       </div>
 
       {/* Chart */}
-      <div className="bg-[#18181b] border border-[#27272a] rounded-xl p-6">
-        <h3 className="text-sm font-medium text-[#a1a1aa] mb-4">
+      <div className="replay-panel p-6">
+        <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-4">
           Accuracy by Model — {BENCHMARK_LABELS[selectedBenchmark] || selectedBenchmark}
         </h3>
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={chartData} layout="vertical" margin={{ left: 140 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-            <XAxis type="number" domain={[0, 100]} tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+        <ResponsiveContainer width="100%" height={Math.max(400, chartData.length * 20)}>
+          <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#1e1e24" />
+            <XAxis type="number" domain={[0, 100]} tick={{ fill: "#52525b", fontSize: 12 }} />
             <YAxis
               type="category"
               dataKey="name"
               tick={{ fill: "#a1a1aa", fontSize: 12 }}
-              width={130}
+              width={240}
+              interval={0}
             />
             <Tooltip
               contentStyle={{
-                background: "#18181b",
-                border: "1px solid #27272a",
+                background: "#0c0c0f",
+                border: "1px solid #1e1e24",
                 borderRadius: 8,
                 color: "#fafafa",
                 fontSize: 13,
@@ -158,7 +159,7 @@ export default function LeaderboardView() {
                 return [value, name];
               }}
             />
-            <Bar dataKey="accuracy" radius={[0, 4, 4, 0]}>
+            <Bar dataKey="accuracy" radius={[0, 3, 3, 0]} barSize={14}>
               {chartData.map((entry, index) => (
                 <Cell
                   key={index}
@@ -178,32 +179,32 @@ export default function LeaderboardView() {
       </div>
 
       {/* Table */}
-      <div className="bg-[#18181b] border border-[#27272a] rounded-xl overflow-hidden">
+      <div className="replay-panel overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#27272a] text-[#a1a1aa]">
-                <th className="text-left px-4 py-3 font-medium">#</th>
-                <th className="text-left px-4 py-3 font-medium">Model</th>
-                <th className="text-right px-4 py-3 font-medium">Accuracy</th>
-                <th className="text-right px-4 py-3 font-medium">F1</th>
-                <th className="text-right px-4 py-3 font-medium">TP</th>
-                <th className="text-right px-4 py-3 font-medium">FP</th>
-                <th className="text-right px-4 py-3 font-medium">FN</th>
-                <th className="text-right px-4 py-3 font-medium">TN</th>
-                <th className="text-right px-4 py-3 font-medium">Parse %</th>
-                <th className="text-right px-4 py-3 font-medium">Consistency</th>
-                <th className="text-right px-4 py-3 font-medium">Avg Cost</th>
-                <th className="text-right px-4 py-3 font-medium">Avg Time</th>
+              <tr className="border-b border-[#1e1e24]/50">
+                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">#</th>
+                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Model</th>
+                <th className="text-right px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Accuracy</th>
+                <th className="text-right px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">F1</th>
+                <th className="text-right px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">TP</th>
+                <th className="text-right px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">FP</th>
+                <th className="text-right px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">FN</th>
+                <th className="text-right px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">TN</th>
+                <th className="text-right px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Parse %</th>
+                <th className="text-right px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Consistency</th>
+                <th className="text-right px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Avg Cost</th>
+                <th className="text-right px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Avg Time</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((row, i) => (
                 <tr
                   key={row.model_id}
-                  className="border-b border-[#27272a]/50 hover:bg-[#27272a]/30 transition-colors"
+                  className="border-b border-[#1e1e24]/50 hover:bg-white/[0.01] transition-colors"
                 >
-                  <td className="px-4 py-2.5 text-[#a1a1aa]">{i + 1}</td>
+                  <td className="px-4 py-2.5 text-zinc-500">{i + 1}</td>
                   <td className="px-4 py-2.5 font-medium">
                     {shortModelName(row.model_id, models)}
                   </td>
@@ -233,10 +234,10 @@ export default function LeaderboardView() {
                   <td className="px-4 py-2.5 text-right font-mono">
                     {(row.repeat_consistency * 100).toFixed(0)}%
                   </td>
-                  <td className="px-4 py-2.5 text-right font-mono text-[#a1a1aa]">
+                  <td className="px-4 py-2.5 text-right font-mono text-zinc-500">
                     ${row.avg_cost_usd.toFixed(4)}
                   </td>
-                  <td className="px-4 py-2.5 text-right font-mono text-[#a1a1aa]">
+                  <td className="px-4 py-2.5 text-right font-mono text-zinc-500">
                     {row.avg_time_secs.toFixed(1)}s
                   </td>
                 </tr>

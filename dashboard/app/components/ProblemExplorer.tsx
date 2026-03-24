@@ -101,11 +101,11 @@ export default function ProblemExplorer() {
       {/* Controls */}
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <label className="text-sm text-[#a1a1aa]">Dataset:</label>
+          <label className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500">Dataset:</label>
           <select
             value={dataset}
             onChange={(e) => setDataset(e.target.value as typeof dataset)}
-            className="bg-[#18181b] border border-[#27272a] rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-[#6366f1]"
+            className="bg-[#0c0c0f] border border-[#1e1e24] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-sky-800"
           >
             <option value="normal">Normal (1000)</option>
             <option value="hard1">Hard1 (69)</option>
@@ -113,11 +113,11 @@ export default function ProblemExplorer() {
           </select>
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-sm text-[#a1a1aa]">Answer:</label>
+          <label className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500">Answer:</label>
           <select
             value={filterAnswer}
             onChange={(e) => setFilterAnswer(e.target.value as typeof filterAnswer)}
-            className="bg-[#18181b] border border-[#27272a] rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-[#6366f1]"
+            className="bg-[#0c0c0f] border border-[#1e1e24] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-sky-800"
           >
             <option value="all">All</option>
             <option value="true">TRUE only</option>
@@ -129,9 +129,9 @@ export default function ProblemExplorer() {
           placeholder="Search equations..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="bg-[#18181b] border border-[#27272a] rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-[#6366f1] w-64"
+          className="bg-[#0c0c0f] border border-[#1e1e24] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-sky-800 w-64"
         />
-        <div className="ml-auto flex gap-3 text-sm text-[#a1a1aa]">
+        <div className="ml-auto flex gap-3 text-sm text-zinc-500">
           <span>{stats.total} problems</span>
           <span className="text-[#22c55e]">{stats.trueCount} TRUE</span>
           <span className="text-[#ef4444]">{stats.falseCount} FALSE</span>
@@ -139,19 +139,19 @@ export default function ProblemExplorer() {
       </div>
 
       {/* Accuracy distribution chart */}
-      <div className="bg-[#18181b] border border-[#27272a] rounded-xl p-6">
-        <h3 className="text-sm font-medium text-[#a1a1aa] mb-4">
+      <div className="replay-panel p-6">
+        <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-4">
           Problem Difficulty Distribution (benchmark accuracy across 25 models)
         </h3>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={accuracyDistribution}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-            <XAxis dataKey="range" tick={{ fill: "#a1a1aa", fontSize: 11 }} />
-            <YAxis tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#1e1e24" />
+            <XAxis dataKey="range" tick={{ fill: "#52525b", fontSize: 11 }} />
+            <YAxis tick={{ fill: "#52525b", fontSize: 12 }} />
             <Tooltip
               contentStyle={{
-                background: "#18181b",
-                border: "1px solid #27272a",
+                background: "#141417",
+                border: "1px solid #1e1e24",
                 borderRadius: 8,
                 color: "#fafafa",
                 fontSize: 13,
@@ -164,16 +164,16 @@ export default function ProblemExplorer() {
       </div>
 
       {/* Problem list */}
-      <div className="bg-[#18181b] border border-[#27272a] rounded-xl overflow-hidden">
+      <div className="replay-panel overflow-hidden">
         <div className="max-h-[500px] overflow-y-auto">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-[#18181b] z-10">
-              <tr className="border-b border-[#27272a] text-[#a1a1aa]">
-                <th className="text-left px-4 py-3 font-medium w-28">ID</th>
-                <th className="text-left px-4 py-3 font-medium">Equation 1</th>
-                <th className="text-left px-4 py-3 font-medium">Equation 2</th>
-                <th className="text-center px-4 py-3 font-medium w-20">Answer</th>
-                <th className="text-right px-4 py-3 font-medium w-28">Model Acc</th>
+            <thead className="sticky top-0 bg-[#141417] z-10">
+              <tr className="border-b border-[#1e1e24] text-zinc-600">
+                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider font-normal w-28">ID</th>
+                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider font-normal">Equation 1</th>
+                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider font-normal">Equation 2</th>
+                <th className="text-center px-4 py-3 text-[10px] uppercase tracking-wider font-normal w-20">Answer</th>
+                <th className="text-right px-4 py-3 text-[10px] uppercase tracking-wider font-normal w-28">Model Acc</th>
               </tr>
             </thead>
             <tbody>
@@ -182,10 +182,10 @@ export default function ProblemExplorer() {
                 return (
                   <tr
                     key={p.id}
-                    className="border-b border-[#27272a]/50 hover:bg-[#27272a]/30 transition-colors cursor-pointer"
+                    className="border-b border-[#1e1e24]/50 hover:bg-white/[0.01] transition-colors cursor-pointer"
                     onClick={() => setSelectedProblem(p)}
                   >
-                    <td className="px-4 py-2.5 font-mono text-[#a1a1aa] text-xs">{p.id}</td>
+                    <td className="px-4 py-2.5 font-mono text-zinc-500 text-xs">{p.id}</td>
                     <td className="px-4 py-2.5 font-mono text-xs">{p.equation1}</td>
                     <td className="px-4 py-2.5 font-mono text-xs">{p.equation2}</td>
                     <td className="px-4 py-2.5 text-center">
@@ -226,32 +226,32 @@ export default function ProblemExplorer() {
 
       {/* Selected problem detail */}
       {selectedProblem && (
-        <div className="bg-[#18181b] border border-[#6366f1]/30 rounded-xl p-6">
+        <div className="replay-panel p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium">{selectedProblem.id}</h3>
+            <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500">{selectedProblem.id}</h3>
             <button
               onClick={() => setSelectedProblem(null)}
-              className="text-[#a1a1aa] hover:text-white text-sm"
+              className="text-zinc-500 hover:text-white text-sm"
             >
               Close
             </button>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-xs text-[#a1a1aa] mb-1">Equation 1</div>
-              <div className="font-mono text-sm bg-[#09090b] rounded-lg p-3 border border-[#27272a]">
+              <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-1">Equation 1</div>
+              <div className="font-mono text-sm bg-[#0c0c0f] rounded-lg p-3 border border-[#1e1e24]">
                 {selectedProblem.equation1}
               </div>
             </div>
             <div>
-              <div className="text-xs text-[#a1a1aa] mb-1">Equation 2</div>
-              <div className="font-mono text-sm bg-[#09090b] rounded-lg p-3 border border-[#27272a]">
+              <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-1">Equation 2</div>
+              <div className="font-mono text-sm bg-[#0c0c0f] rounded-lg p-3 border border-[#1e1e24]">
                 {selectedProblem.equation2}
               </div>
             </div>
           </div>
           <div className="mt-3 flex items-center gap-4">
-            <span className="text-sm text-[#a1a1aa]">
+            <span className="text-sm text-zinc-500">
               Does Eq1 imply Eq2?{" "}
               <span
                 className={`font-medium ${
@@ -262,7 +262,7 @@ export default function ProblemExplorer() {
               </span>
             </span>
             {difficultyMap.get(selectedProblem.id) && (
-              <span className="text-sm text-[#a1a1aa]">
+              <span className="text-sm text-zinc-500">
                 Benchmark accuracy:{" "}
                 <span className="font-mono">
                   {(difficultyMap.get(selectedProblem.id)!.accuracy * 100).toFixed(1)}%

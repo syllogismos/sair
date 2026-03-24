@@ -80,13 +80,13 @@ export default function ModelBreakdownView() {
   }, [data, models]);
 
   if (data.length === 0)
-    return <div className="text-[#a1a1aa] py-12 text-center">Loading...</div>;
+    return <div className="text-zinc-500 py-12 text-center">Loading...</div>;
 
   return (
     <div className="space-y-6">
       {/* TRUE vs FALSE Accuracy Scatter */}
-      <div className="bg-[#18181b] border border-[#27272a] rounded-xl p-6">
-        <h3 className="text-sm font-medium text-[#a1a1aa] mb-1">
+      <div className="replay-panel p-6">
+        <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-1">
           TRUE vs FALSE Accuracy — Hard / Default Reasoning
         </h3>
         <p className="text-xs text-[#71717a] mb-4">
@@ -95,34 +95,34 @@ export default function ModelBreakdownView() {
         </p>
         <ResponsiveContainer width="100%" height={400}>
           <ScatterChart margin={{ left: 20, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#1e1e24" />
             <XAxis
               type="number"
               dataKey="trueAcc"
               name="TRUE Accuracy"
               domain={[0, 100]}
-              tick={{ fill: "#a1a1aa", fontSize: 12 }}
-              label={{ value: "TRUE Accuracy %", position: "bottom", fill: "#a1a1aa", fontSize: 12 }}
+              tick={{ fill: "#52525b", fontSize: 12 }}
+              label={{ value: "TRUE Accuracy %", position: "bottom", fill: "#52525b", fontSize: 12 }}
             />
             <YAxis
               type="number"
               dataKey="falseAcc"
               name="FALSE Accuracy"
               domain={[0, 100]}
-              tick={{ fill: "#a1a1aa", fontSize: 12 }}
+              tick={{ fill: "#52525b", fontSize: 12 }}
               label={{
                 value: "FALSE Accuracy %",
                 angle: -90,
                 position: "insideLeft",
-                fill: "#a1a1aa",
+                fill: "#52525b",
                 fontSize: 12,
               }}
             />
             <ZAxis range={[60, 60]} />
             <Tooltip
               contentStyle={{
-                background: "#18181b",
-                border: "1px solid #27272a",
+                background: "#141417",
+                border: "1px solid #1e1e24",
                 borderRadius: 8,
                 color: "#fafafa",
                 fontSize: 13,
@@ -130,9 +130,26 @@ export default function ModelBreakdownView() {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               formatter={(value: any, name: any) => [`${value}%`, name]}
             />
-            <Scatter data={scatterData} fill="#6366f1" fillOpacity={0.8}>
+            <Scatter
+              data={scatterData}
+              fill="#0ea5e9"
+              fillOpacity={0.8}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              label={({ x, y, value, index }: any) => (
+                <text
+                  key={index}
+                  x={x + 8}
+                  y={y - 6}
+                  fill="#52525b"
+                  fontSize={9}
+                  textAnchor="start"
+                >
+                  {scatterData[index]?.name}
+                </text>
+              )}
+            >
               {scatterData.map((entry, i) => (
-                <Cell key={i} fill="#818cf8" />
+                <Cell key={i} fill="#38bdf8" />
               ))}
             </Scatter>
           </ScatterChart>
@@ -141,11 +158,11 @@ export default function ModelBreakdownView() {
 
       {/* Per-model breakdown */}
       <div className="flex items-center gap-2">
-        <label className="text-sm text-[#a1a1aa]">Model:</label>
+        <label className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500">Model:</label>
         <select
           value={selectedModel}
           onChange={(e) => setSelectedModel(e.target.value)}
-          className="bg-[#18181b] border border-[#27272a] rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-[#6366f1]"
+          className="bg-[#0c0c0f] border border-[#1e1e24] rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-sky-700"
         >
           {modelIds.map((id) => (
             <option key={id} value={id}>
@@ -155,8 +172,8 @@ export default function ModelBreakdownView() {
         </select>
       </div>
 
-      <div className="bg-[#18181b] border border-[#27272a] rounded-xl p-6">
-        <h3 className="text-sm font-medium text-[#a1a1aa] mb-4">
+      <div className="replay-panel p-6">
+        <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-4">
           {displayName(selectedModel)} — Accuracy Breakdown
         </h3>
         <ResponsiveContainer width="100%" height={300}>
@@ -168,13 +185,13 @@ export default function ModelBreakdownView() {
               FALSE: +(x.false_accuracy * 100).toFixed(1),
             }))}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-            <XAxis dataKey="benchmark" tick={{ fill: "#a1a1aa", fontSize: 12 }} />
-            <YAxis domain={[0, 100]} tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#1e1e24" />
+            <XAxis dataKey="benchmark" tick={{ fill: "#52525b", fontSize: 12 }} />
+            <YAxis domain={[0, 100]} tick={{ fill: "#52525b", fontSize: 12 }} />
             <Tooltip
               contentStyle={{
-                background: "#18181b",
-                border: "1px solid #27272a",
+                background: "#141417",
+                border: "1px solid #1e1e24",
                 borderRadius: 8,
                 color: "#fafafa",
                 fontSize: 13,
@@ -183,7 +200,7 @@ export default function ModelBreakdownView() {
               formatter={(v: any) => `${v}%`}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Bar dataKey="Overall" fill="#6366f1" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="Overall" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
             <Bar dataKey="TRUE" fill="#22c55e" radius={[4, 4, 0, 0]} />
             <Bar dataKey="FALSE" fill="#ef4444" radius={[4, 4, 0, 0]} />
           </BarChart>
@@ -191,16 +208,16 @@ export default function ModelBreakdownView() {
       </div>
 
       {/* Summary table */}
-      <div className="bg-[#18181b] border border-[#27272a] rounded-xl overflow-hidden">
+      <div className="replay-panel overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#27272a] text-[#a1a1aa]">
-              <th className="text-left px-4 py-3 font-medium">Model</th>
-              <th className="text-left px-4 py-3 font-medium">Benchmark</th>
-              <th className="text-right px-4 py-3 font-medium">Overall</th>
-              <th className="text-right px-4 py-3 font-medium">TRUE Acc</th>
-              <th className="text-right px-4 py-3 font-medium">FALSE Acc</th>
-              <th className="text-right px-4 py-3 font-medium">Bias</th>
+            <tr className="border-b border-[#1e1e24] text-[10px] uppercase tracking-wider text-zinc-600">
+              <th className="text-left px-4 py-3 font-normal">Model</th>
+              <th className="text-left px-4 py-3 font-normal">Benchmark</th>
+              <th className="text-right px-4 py-3 font-normal">Overall</th>
+              <th className="text-right px-4 py-3 font-normal">TRUE Acc</th>
+              <th className="text-right px-4 py-3 font-normal">FALSE Acc</th>
+              <th className="text-right px-4 py-3 font-normal">Bias</th>
             </tr>
           </thead>
           <tbody>
@@ -212,10 +229,10 @@ export default function ModelBreakdownView() {
                 return (
                   <tr
                     key={`${row.model_id}-${row.benchmark_id}`}
-                    className="border-b border-[#27272a]/50 hover:bg-[#27272a]/30 transition-colors"
+                    className="border-b border-[#1e1e24]/50 hover:bg-white/[0.01] transition-colors"
                   >
                     <td className="px-4 py-2.5 font-medium">{displayName(row.model_id)}</td>
-                    <td className="px-4 py-2.5 text-[#a1a1aa]">
+                    <td className="px-4 py-2.5 text-zinc-500">
                       {BM_SHORT[row.benchmark_id]}
                     </td>
                     <td className="px-4 py-2.5 text-right font-mono">
@@ -228,7 +245,7 @@ export default function ModelBreakdownView() {
                       {(row.false_accuracy * 100).toFixed(1)}%
                     </td>
                     <td className="px-4 py-2.5 text-right font-mono">
-                      <span className={bias > 0.1 ? "text-[#22c55e]" : bias < -0.1 ? "text-[#ef4444]" : "text-[#a1a1aa]"}>
+                      <span className={bias > 0.1 ? "text-[#22c55e]" : bias < -0.1 ? "text-[#ef4444]" : "text-zinc-500"}>
                         {bias > 0 ? "+" : ""}
                         {(bias * 100).toFixed(1)}
                       </span>
@@ -242,4 +259,3 @@ export default function ModelBreakdownView() {
     </div>
   );
 }
-

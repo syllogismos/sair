@@ -115,7 +115,7 @@ function StatusBadge({ status }: { status: string }) {
   };
   return (
     <span
-      className={`px-2 py-0.5 text-xs rounded border ${colors[status] || "bg-zinc-700 text-zinc-400 border-zinc-600"}`}
+      className={`px-2 py-0.5 text-xs rounded border ${colors[status] || "bg-[#1e1e24] text-zinc-400 border-zinc-600"}`}
     >
       {status}
     </span>
@@ -135,10 +135,10 @@ function ResponseModal({
       onClick={onClose}
     >
       <div
-        className="bg-[#18181b] border border-[#27272a] rounded-xl max-w-3xl w-full max-h-[80vh] flex flex-col"
+        className="replay-panel max-w-3xl w-full max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#27272a]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e24]">
           <div>
             <h3 className="text-sm font-medium">
               <span
@@ -174,14 +174,14 @@ function ResponseModal({
           {call.prompt_full && (
             <div>
               <div className="text-xs text-zinc-500 mb-1">Prompt</div>
-              <pre className="text-xs text-zinc-400 bg-[#09090b] rounded-lg p-4 border border-[#27272a] whitespace-pre-wrap break-words max-h-[30vh] overflow-y-auto">
+              <pre className="text-xs text-zinc-400 bg-[#0c0c0f] rounded-lg p-4 border border-[#1e1e24] whitespace-pre-wrap break-words max-h-[30vh] overflow-y-auto">
                 {call.prompt_full}
               </pre>
             </div>
           )}
           <div>
             <div className="text-xs text-zinc-500 mb-1">Response</div>
-            <div className="text-sm bg-[#09090b] rounded-lg p-4 border border-[#27272a] prose prose-invert prose-sm max-w-none [&_.katex]:text-[#e2e8f0] [&_p]:text-[#d4d4d8] [&_li]:text-[#d4d4d8] [&_code]:text-[#a78bfa] [&_code]:bg-[#27272a] [&_code]:px-1 [&_code]:rounded">
+            <div className="text-sm bg-[#0c0c0f] rounded-lg p-4 border border-[#1e1e24] prose prose-invert prose-sm max-w-none [&_.katex]:text-[#e2e8f0] [&_p]:text-[#d4d4d8] [&_li]:text-[#d4d4d8] [&_code]:text-[#a78bfa] [&_code]:bg-[#1e1e24] [&_code]:px-1 [&_code]:rounded">
               {call.response_preview ? (
                 <ReactMarkdown
                   remarkPlugins={[remarkMath]}
@@ -202,7 +202,7 @@ function ResponseModal({
 
 // --- GEPA-specific components ---
 
-function AccuracyChart({ data }: { data: MetricBucket[] }) {
+function AccuracyChart({ data, totalMetricCalls, valSize }: { data: MetricBucket[]; totalMetricCalls?: number; valSize?: number | null }) {
   const [hovered, setHovered] = useState<number | null>(null);
 
   if (data.length === 0) return null;
@@ -234,17 +234,25 @@ function AccuracyChart({ data }: { data: MetricBucket[] }) {
 
   return (
     <div>
-      <h3 className="text-sm font-medium text-zinc-400 mb-2">
-        Evaluation Accuracy Over Time
-      </h3>
-      <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 relative">
+      <div className="flex items-baseline gap-3 mb-2">
+        <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500">
+          Evaluation Accuracy Over Time
+        </h3>
+        {(totalMetricCalls != null || valSize != null) && (
+          <span className="text-[10px] text-zinc-600 font-mono">
+            {totalMetricCalls != null && <>{totalMetricCalls} metric calls</>}
+            {valSize != null && <> · {valSize} val examples</>}
+          </span>
+        )}
+      </div>
+      <div className="replay-panel p-3 relative">
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 220 }}>
           {yTicks.map((t) => (
             <g key={t}>
               <line
                 x1={PAD.left} y1={yScale(t)}
                 x2={W - PAD.right} y2={yScale(t)}
-                stroke="#27272a" strokeWidth={1}
+                stroke="#1e1e24" strokeWidth={1}
               />
               <text
                 x={PAD.left - 6} y={yScale(t) + 4}
@@ -287,7 +295,7 @@ function AccuracyChart({ data }: { data: MetricBucket[] }) {
 
           <polyline
             points={polyline} fill="none"
-            stroke="#6366f1" strokeWidth={2} strokeLinejoin="round"
+            stroke="#0ea5e9" strokeWidth={2} strokeLinejoin="round"
           />
 
           {/* Hover targets — larger invisible circles for easier hovering */}
@@ -311,7 +319,7 @@ function AccuracyChart({ data }: { data: MetricBucket[] }) {
               cx={xScale(d.bucket_start)}
               cy={yScale(d.accuracy)}
               r={hovered === i ? 5 : 3}
-              fill={hovered === i ? "#818cf8" : "#6366f1"}
+              fill={hovered === i ? "#38bdf8" : "#0ea5e9"}
               stroke="#09090b"
               strokeWidth={1}
               className="pointer-events-none"
@@ -325,7 +333,7 @@ function AccuracyChart({ data }: { data: MetricBucket[] }) {
               y1={PAD.top}
               x2={xScale(hoveredData.bucket_start)}
               y2={PAD.top + plotH}
-              stroke="#6366f1"
+              stroke="#0ea5e9"
               strokeWidth={1}
               strokeDasharray="3,3"
               opacity={0.4}
@@ -335,19 +343,19 @@ function AccuracyChart({ data }: { data: MetricBucket[] }) {
 
           <defs>
             <linearGradient id="accuracyGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6366f1" stopOpacity={0.4} />
-              <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+              <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.4} />
+              <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0} />
             </linearGradient>
           </defs>
         </svg>
 
         {/* Hover tooltip */}
         {hoveredData && (
-          <div className="absolute top-2 right-3 bg-[#09090b] border border-zinc-700 rounded-lg px-3 py-2 text-xs pointer-events-none">
+          <div className="absolute top-2 right-3 bg-[#0c0c0f] border border-[#1e1e24] rounded-lg px-3 py-2 text-xs pointer-events-none">
             <div className="text-zinc-400">
               Calls {hoveredData.bucket_start}–{hoveredData.bucket_start + 19}
             </div>
-            <div className="text-indigo-400 font-medium text-sm">
+            <div className="text-sky-400 font-medium text-sm">
               {(hoveredData.accuracy * 100).toFixed(1)}%
             </div>
             <div className="text-zinc-500">
@@ -387,7 +395,7 @@ function CandidatesTable({
 
   return (
     <div>
-      <h3 className="text-sm font-medium text-zinc-400 mb-2">
+      <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-2">
         Candidate Programs ({candidates.length})
       </h3>
       <div className="space-y-1">
@@ -403,12 +411,12 @@ function CandidatesTable({
               key={c.candidate_idx}
               className={`border rounded-lg transition-colors ${
                 isBest
-                  ? "border-indigo-500/40 bg-indigo-950/20"
-                  : "border-zinc-800 bg-zinc-900"
+                  ? "border-sky-500/30 bg-sky-950/15"
+                  : "border-[#1e1e24] bg-[#141417]"
               }`}
             >
               <div
-                className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-zinc-800/50 transition-colors"
+                className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-white/[0.02] transition-colors"
                 onClick={() =>
                   setExpanded(isExpanded ? null : c.candidate_idx)
                 }
@@ -419,17 +427,17 @@ function CandidatesTable({
 
                 {/* Score bar */}
                 <div className="flex items-center gap-2 w-32">
-                  <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="flex-1 h-2 bg-[#1e1e24] rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full ${
-                        isBest ? "bg-indigo-500" : "bg-zinc-600"
+                        isBest ? "bg-emerald-500" : "bg-[#1e1e24]"
                       }`}
                       style={{ width: `${(c.val_score * 100).toFixed(1)}%` }}
                     />
                   </div>
                   <span
                     className={`text-xs font-mono ${
-                      isBest ? "text-indigo-400 font-medium" : "text-zinc-400"
+                      isBest ? "text-sky-400 font-medium" : "text-zinc-400"
                     }`}
                   >
                     {(c.val_score * 100).toFixed(1)}%
@@ -456,7 +464,7 @@ function CandidatesTable({
                 )}
 
                 {isBest && (
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-sky-950/50 text-sky-400 border border-sky-800/40">
                     Best
                   </span>
                 )}
@@ -467,13 +475,13 @@ function CandidatesTable({
               </div>
 
               {isExpanded && (
-                <div className="px-4 pb-3 border-t border-zinc-800/50">
+                <div className="px-4 pb-3 border-t border-[#1e1e24]/50">
                   {Object.entries(instructions).map(([name, text]) => (
                     <div key={name} className="mt-2">
                       <div className="text-xs text-zinc-500 mb-1">
                         {name}
                       </div>
-                      <pre className="text-xs text-zinc-300 bg-[#09090b] rounded-lg p-3 border border-zinc-800 whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
+                      <pre className="text-xs text-zinc-300 bg-[#0c0c0f] rounded-lg p-3 border border-[#1e1e24] whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
                         {text as string}
                       </pre>
                     </div>
@@ -496,21 +504,21 @@ function ParetoSummary({ data, valSize }: { data: ParetoEntry[]; valSize: number
 
   return (
     <div>
-      <h3 className="text-sm font-medium text-zinc-400 mb-2">
+      <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-2">
         Pareto Frontier
       </h3>
-      <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+      <div className="replay-panel p-4">
         <table className="w-full text-xs">
           <thead>
-            <tr className="text-left text-zinc-500 border-b border-zinc-800">
-              <th className="pb-2 pr-4">Candidate</th>
-              <th className="pb-2 text-right">Best on</th>
-              <th className="pb-2 pl-4">Coverage</th>
+            <tr className="text-left text-[10px] uppercase tracking-wider text-zinc-600 border-b border-[#1e1e24]">
+              <th className="pb-2 pr-4 font-normal">Candidate</th>
+              <th className="pb-2 text-right font-normal">Best on</th>
+              <th className="pb-2 pl-4 font-normal">Coverage</th>
             </tr>
           </thead>
           <tbody>
             {data.map((d) => (
-              <tr key={d.candidate_idx} className="border-b border-zinc-800/50">
+              <tr key={d.candidate_idx} className="border-b border-[#1e1e24]/50">
                 <td className="py-1.5 pr-4 font-mono text-zinc-300">
                   #{d.candidate_idx}
                 </td>
@@ -519,7 +527,7 @@ function ParetoSummary({ data, valSize }: { data: ParetoEntry[]; valSize: number
                 </td>
                 <td className="py-1.5 pl-4">
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden max-w-[200px]">
+                    <div className="flex-1 h-2 bg-[#1e1e24] rounded-full overflow-hidden max-w-[200px]">
                       <div
                         className="h-full rounded-full bg-amber-500/50"
                         style={{ width: `${(d.frontier_count / maxCount) * 100}%` }}
@@ -548,7 +556,7 @@ function RecentMetricCalls({ data }: { data: MetricCall[] }) {
 
   return (
     <div>
-      <h3 className="text-sm font-medium text-zinc-400 mb-2">
+      <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-2">
         Recent Metric Evaluations (last 100)
       </h3>
       <div className="flex flex-wrap gap-[2px]">
@@ -578,7 +586,7 @@ function RecentMetricCalls({ data }: { data: MetricCall[] }) {
       </div>
 
       {selected && (
-        <div className="mt-3 bg-[#09090b] border border-zinc-800 rounded-lg p-4 text-sm">
+        <div className="mt-3 bg-[#0c0c0f] border border-[#1e1e24] rounded-lg p-4 text-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <span className={`px-2 py-0.5 text-xs rounded border ${
@@ -623,7 +631,7 @@ function RecentMetricCalls({ data }: { data: MetricCall[] }) {
           {selected.feedback_preview && (
             <div>
               <div className="text-xs text-zinc-500 mb-1">Feedback</div>
-              <pre className="text-xs text-zinc-300 bg-zinc-900 rounded-lg p-3 border border-zinc-800 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+              <pre className="text-xs text-zinc-300 bg-[#0c0c0f] rounded-lg p-3 border border-[#1e1e24] whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
                 {selected.feedback_preview}
               </pre>
             </div>
@@ -705,7 +713,7 @@ function LiveCandidates({ iterations }: { iterations: Iteration[] }) {
 
   return (
     <div>
-      <h3 className="text-sm font-medium text-zinc-400 mb-2">
+      <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-2">
         Candidate Programs (live — {liveCandidates.length} so far)
       </h3>
       <div className="space-y-1">
@@ -719,14 +727,14 @@ function LiveCandidates({ iterations }: { iterations: Iteration[] }) {
               key={c.idx}
               className={`border rounded-lg transition-colors ${
                 isBest
-                  ? "border-indigo-500/40 bg-indigo-950/20"
-                  : "border-zinc-800 bg-zinc-900"
+                  ? "border-sky-500/30 bg-sky-950/15"
+                  : "border-[#1e1e24] bg-[#141417]"
               }`}
             >
               <div
                 className={`flex items-center gap-3 px-4 py-2.5 ${
                   hasInstructions
-                    ? "cursor-pointer hover:bg-zinc-800/50"
+                    ? "cursor-pointer hover:bg-white/[0.02]"
                     : ""
                 } transition-colors`}
                 onClick={() =>
@@ -740,10 +748,10 @@ function LiveCandidates({ iterations }: { iterations: Iteration[] }) {
 
                 {c.bestScore != null && (
                   <div className="flex items-center gap-2 w-32">
-                    <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="flex-1 h-2 bg-[#1e1e24] rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${
-                          isBest ? "bg-indigo-500" : "bg-zinc-600"
+                          isBest ? "bg-emerald-500" : "bg-[#1e1e24]"
                         }`}
                         style={{
                           width: `${(c.bestScore * 100).toFixed(1)}%`,
@@ -753,7 +761,7 @@ function LiveCandidates({ iterations }: { iterations: Iteration[] }) {
                     <span
                       className={`text-xs font-mono ${
                         isBest
-                          ? "text-indigo-400 font-medium"
+                          ? "text-sky-400 font-medium"
                           : "text-zinc-400"
                       }`}
                     >
@@ -779,7 +787,7 @@ function LiveCandidates({ iterations }: { iterations: Iteration[] }) {
                 )}
 
                 {isBest && (
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-sky-950/50 text-sky-400 border border-sky-800/40">
                     Best
                   </span>
                 )}
@@ -792,13 +800,13 @@ function LiveCandidates({ iterations }: { iterations: Iteration[] }) {
               </div>
 
               {isExpanded && hasInstructions && (
-                <div className="px-4 pb-3 border-t border-zinc-800/50">
+                <div className="px-4 pb-3 border-t border-[#1e1e24]/50">
                   {Object.entries(c.instructions).map(([name, text]) => (
                     <div key={name} className="mt-2">
                       <div className="text-xs text-zinc-500 mb-1">
                         {name}
                       </div>
-                      <pre className="text-xs text-zinc-300 bg-[#09090b] rounded-lg p-3 border border-zinc-800 whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
+                      <pre className="text-xs text-zinc-300 bg-[#0c0c0f] rounded-lg p-3 border border-[#1e1e24] whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
                         {text}
                       </pre>
                     </div>
@@ -829,7 +837,7 @@ function IterationsTimeline({ iterations, totalMetricCalls, valSize }: { iterati
 
   return (
     <div>
-      <h3 className="text-sm font-medium text-zinc-400 mb-2">
+      <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-2">
         GEPA Iterations (live)
       </h3>
       <div className="space-y-2 max-h-[600px] overflow-y-auto">
@@ -846,14 +854,14 @@ function IterationsTimeline({ iterations, totalMetricCalls, valSize }: { iterati
             return (
               <div
                 key={iterNum}
-                className="border border-zinc-800 rounded-lg p-3 bg-zinc-900"
+                className="border border-[#1e1e24] rounded-lg p-3 bg-[#141417]"
               >
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-zinc-500">
                     iter {iterNum}
                   </span>
                   {baseEvt ? (
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-300">
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-[#1e1e24] text-zinc-300">
                       Base evaluation
                     </span>
                   ) : (
@@ -896,14 +904,14 @@ function IterationsTimeline({ iterations, totalMetricCalls, valSize }: { iterati
                 wasAccepted
                   ? "border-emerald-500/30 bg-emerald-950/10"
                   : wasRejected
-                    ? "border-zinc-800 bg-zinc-900"
-                    : "border-zinc-800/50 bg-zinc-900/50"
+                    ? "border-[#1e1e24] bg-[#141417]"
+                    : "border-[#1e1e24]/50 bg-[#141417]/50"
               }`}
             >
               {/* Header — always visible */}
               <div
                 className={`flex items-center gap-2 flex-wrap p-3 ${
-                  hasInstructions ? "cursor-pointer hover:bg-zinc-800/30" : ""
+                  hasInstructions ? "cursor-pointer hover:bg-white/[0.02]" : ""
                 }`}
                 onClick={() =>
                   hasInstructions &&
@@ -937,7 +945,7 @@ function IterationsTimeline({ iterations, totalMetricCalls, valSize }: { iterati
                   </span>
                 )}
                 {wasSkipped && (
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-700/50 text-zinc-500">
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-[#1e1e24]/50 text-zinc-500">
                     skipped
                   </span>
                 )}
@@ -1029,14 +1037,14 @@ function IterationsTimeline({ iterations, totalMetricCalls, valSize }: { iterati
 
               {/* Expanded instruction */}
               {isExpanded && hasInstructions && (
-                <div className="px-3 pb-3 border-t border-zinc-800/50">
+                <div className="px-3 pb-3 border-t border-[#1e1e24]/50">
                   <div className="text-xs text-zinc-500 mt-2 mb-1">
                     Proposed instruction {wasAccepted ? "(accepted)" : wasRejected ? "(rejected)" : ""}
                   </div>
                   {Object.entries(instructions).map(([name, text]) => (
                     <pre
                       key={name}
-                      className="text-xs text-zinc-300 bg-[#09090b] rounded-lg p-3 border border-zinc-800 whitespace-pre-wrap break-words max-h-64 overflow-y-auto mt-1"
+                      className="text-xs text-zinc-300 bg-[#0c0c0f] rounded-lg p-3 border border-[#1e1e24] whitespace-pre-wrap break-words max-h-64 overflow-y-auto mt-1"
                     >
                       {text as string}
                     </pre>
@@ -1112,10 +1120,12 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
         <span className="text-xs text-zinc-500 font-mono">{run.run_id}</span>
       </div>
 
-      <div className="grid grid-cols-6 gap-4">
+      <div className="grid grid-cols-4 sm:grid-cols-8 gap-4">
         {[
           { label: "Solver", value: run.solver },
           { label: "Auto", value: run.auto },
+          { label: "Train", value: run.train_size != null ? String(run.train_size) : "—" },
+          { label: "Val", value: run.val_size != null ? String(run.val_size) : "—" },
           { label: "Started", value: formatTime(run.started_at) },
           {
             label: "Duration",
@@ -1140,17 +1150,17 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
         ].map((s) => (
           <div
             key={s.label}
-            className="bg-zinc-900 border border-zinc-800 rounded-lg p-3"
+            className="replay-panel p-3"
           >
-            <div className="text-xs text-zinc-500">{s.label}</div>
-            <div className="text-sm font-medium mt-1">{s.value}</div>
+            <div className="text-[9px] text-zinc-600 uppercase tracking-wider">{s.label}</div>
+            <div className="text-sm font-medium mt-1 text-zinc-200">{s.value}</div>
           </div>
         ))}
       </div>
 
       {/* Section tabs */}
       {hasGepaData && (
-        <div className="flex gap-1 bg-[#18181b] rounded-lg p-1 border border-[#27272a] w-fit">
+        <div className="flex gap-1 bg-[#0c0c0f] rounded-lg p-1 border border-[#1e1e24] w-fit">
           {(
             [
               ["optimization", "Optimization"],
@@ -1162,8 +1172,8 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
               onClick={() => setActiveSection(key)}
               className={`px-3 py-1.5 text-sm rounded-md transition-all ${
                 activeSection === key
-                  ? "bg-[#6366f1] text-white font-medium"
-                  : "text-[#a1a1aa] hover:text-white hover:bg-[#27272a]"
+                  ? "bg-sky-900/60 text-sky-300 font-medium shadow-[0_0_8px_rgba(56,189,248,0.15)]"
+                  : "text-zinc-600 hover:text-zinc-300 hover:bg-white/[0.02]"
               }`}
             >
               {label}
@@ -1176,7 +1186,15 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
       {activeSection === "optimization" && hasGepaData && (
         <div className="space-y-6">
           {/* Accuracy chart */}
-          <AccuracyChart data={metricTimeline} />
+          <AccuracyChart
+            data={metricTimeline}
+            totalMetricCalls={data.totalMetricCalls}
+            valSize={
+              (run as Run).val_size ||
+              iterations?.find((it: Iteration) => it.event === "base_eval")?.total_metric_calls ||
+              null
+            }
+          />
 
           {/* Metric call heatmap */}
           <RecentMetricCalls data={recentMetricCalls} />
@@ -1219,26 +1237,26 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
         <div className="space-y-6">
           {/* Per-model breakdown */}
           <div>
-            <h3 className="text-sm font-medium text-zinc-400 mb-2">
+            <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-2">
               Model Breakdown
             </h3>
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-zinc-500 border-b border-zinc-800">
-                  <th className="pb-2">Model</th>
-                  <th className="pb-2">Role</th>
-                  <th className="pb-2 text-right">Calls</th>
-                  <th className="pb-2 text-right">Prompt Tok</th>
-                  <th className="pb-2 text-right">Comp Tok</th>
-                  <th className="pb-2 text-right">Cost</th>
-                  <th className="pb-2 text-right">Total Time</th>
-                  <th className="pb-2 text-right">Avg/Call</th>
-                  <th className="pb-2 text-right">Errors</th>
+                <tr className="text-left text-[10px] uppercase tracking-wider text-zinc-600 border-b border-[#1e1e24]">
+                  <th className="pb-2 font-normal">Model</th>
+                  <th className="pb-2 font-normal">Role</th>
+                  <th className="pb-2 text-right font-normal">Calls</th>
+                  <th className="pb-2 text-right font-normal">Prompt Tok</th>
+                  <th className="pb-2 text-right font-normal">Comp Tok</th>
+                  <th className="pb-2 text-right font-normal">Cost</th>
+                  <th className="pb-2 text-right font-normal">Total Time</th>
+                  <th className="pb-2 text-right font-normal">Avg/Call</th>
+                  <th className="pb-2 text-right font-normal">Errors</th>
                 </tr>
               </thead>
               <tbody>
                 {calls.map((c, i) => (
-                  <tr key={i} className="border-b border-zinc-800/50">
+                  <tr key={i} className="border-b border-[#1e1e24]/50">
                     <td className="py-2 font-mono text-xs">{c.model}</td>
                     <td className="py-2">
                       <span
@@ -1282,7 +1300,7 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
 
           {/* Recent calls */}
           <div>
-            <h3 className="text-sm font-medium text-zinc-400 mb-2">
+            <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-2">
               Recent Calls (last 50)
             </h3>
             <div className="space-y-1 max-h-[500px] overflow-y-auto">
@@ -1293,7 +1311,7 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
                   className={`text-xs font-mono p-2 rounded border cursor-pointer transition-colors ${
                     c.error
                       ? "border-red-900/50 bg-red-950/20 hover:bg-red-950/30"
-                      : "border-zinc-800 bg-zinc-900 hover:bg-zinc-800"
+                      : "border-[#1e1e24] bg-[#141417] hover:bg-white/[0.03]"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -1399,7 +1417,7 @@ export default function GepaExperiments({
         <p>No GEPA experiment data yet.</p>
         <p className="text-xs mt-1 text-zinc-600">
           Run{" "}
-          <code className="bg-zinc-800 px-1 rounded">
+          <code className="bg-[#1e1e24] px-1 rounded">
             python src/run_gepa.py --solver v1 --auto light
           </code>{" "}
           to start an experiment.
@@ -1413,7 +1431,7 @@ export default function GepaExperiments({
     return (
       <div className="text-zinc-500 text-sm">
         No experiments yet. Start one with{" "}
-        <code className="bg-zinc-800 px-1 rounded">
+        <code className="bg-[#1e1e24] px-1 rounded">
           python src/run_gepa.py
         </code>
       </div>
@@ -1424,21 +1442,21 @@ export default function GepaExperiments({
     <div>
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left text-xs text-zinc-500 border-b border-zinc-800">
-            <th className="pb-2">Run</th>
-            <th className="pb-2">Status</th>
-            <th className="pb-2 text-right">Best Score</th>
-            <th className="pb-2 text-right">Candidates</th>
-            <th className="pb-2 text-right">Cost</th>
-            <th className="pb-2 text-right">Duration</th>
-            <th className="pb-2 pl-4">Started</th>
+          <tr className="text-left text-[10px] uppercase tracking-wider text-zinc-600 border-b border-[#1e1e24]">
+            <th className="pb-2 font-normal">Run</th>
+            <th className="pb-2 font-normal">Status</th>
+            <th className="pb-2 text-right font-normal">Best Score</th>
+            <th className="pb-2 text-right font-normal">Candidates</th>
+            <th className="pb-2 text-right font-normal">Cost</th>
+            <th className="pb-2 text-right font-normal">Duration</th>
+            <th className="pb-2 pl-4 font-normal">Started</th>
           </tr>
         </thead>
         <tbody>
           {runs.map((r) => (
             <tr
               key={r.run_id}
-              className="border-b border-zinc-800/50 hover:bg-zinc-900/50 cursor-pointer"
+              className="border-b border-[#1e1e24]/50 hover:bg-white/[0.01] cursor-pointer transition-colors"
               onClick={() => {
                 setSelectedRun(r.run_id);
                 onNavigate?.(r.run_id);
@@ -1455,7 +1473,7 @@ export default function GepaExperiments({
               </td>
               <td className="py-2 text-right">
                 {r.best_score != null ? (
-                  <span className="text-indigo-400 font-mono">
+                  <span className="text-sky-400 font-mono">
                     {(r.best_score * 100).toFixed(1)}%
                   </span>
                 ) : (
