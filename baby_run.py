@@ -18,10 +18,19 @@ parser.add_argument("--initial-prompt", default=None, help="Path to text file wi
 parser.add_argument("--resume", default=None, help="Run ID to resume")
 args = parser.parse_args()
 
-# Setup Vertex AI (same as run_gepa.py)
-os.environ.setdefault("GOOGLE_APPLICATION_CREDENTIALS", "/path/to/credentials.json")
-os.environ.setdefault("VERTEXAI_PROJECT", "YOUR_GCP_PROJECT")
-os.environ.setdefault("VERTEXAI_LOCATION", "global")
+# Load .env file
+env_path = Path(".env")
+if env_path.exists():
+    for line in env_path.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            key, val = line.split("=", 1)
+            os.environ.setdefault(key.strip(), val.strip())
+
+project = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
+if project:
+    os.environ.setdefault("VERTEXAI_PROJECT", project)
+os.environ.setdefault("VERTEXAI_LOCATION", os.environ.get("GOOGLE_CLOUD_REGION", "global"))
 
 # Load a small slice of real data
 print("Loading problems...")

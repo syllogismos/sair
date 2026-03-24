@@ -20,11 +20,19 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 
 def setup_vertex_ai():
-    """Configure Vertex AI credentials and project."""
-    os.environ.setdefault("GOOGLE_APPLICATION_CREDENTIALS", "/path/to/credentials.json")
-    project = os.environ.get("GOOGLE_CLOUD_PROJECT", "YOUR_GCP_PROJECT")
+    """Configure Vertex AI project/region from .env or environment variables."""
+    from pathlib import Path
+    env_path = Path(__file__).parent.parent / ".env"
+    if env_path.exists():
+        for line in env_path.read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, val = line.split("=", 1)
+                os.environ.setdefault(key.strip(), val.strip())
+    project = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
     region = os.environ.get("GOOGLE_CLOUD_REGION", "global")
-    os.environ.setdefault("VERTEXAI_PROJECT", project)
+    if project:
+        os.environ.setdefault("VERTEXAI_PROJECT", project)
     os.environ.setdefault("VERTEXAI_LOCATION", region)
 
 

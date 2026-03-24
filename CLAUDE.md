@@ -22,7 +22,7 @@ Submission is a Jinja2 prompt template with `{{ equation1 }}`, `{{ equation2 }}`
 - Python 3.12 via uv (`uv pip install`, never pip)
 - Virtual environment: `.venv/` (activate: `source .venv/bin/activate`)
 - HuggingFace CLI: `.venv/bin/hf`
-- Vertex AI: project `YOUR_GCP_PROJECT`, region `us-central1` (auto-configured by `run_gepa.py`). Note: the `VERTEXAI_LOCATION` default in `run_gepa.py` is `global` (not `us-central1`) because Gemini 3.1 models only work with the global endpoint.
+- Vertex AI: set `GOOGLE_CLOUD_PROJECT` and `GOOGLE_APPLICATION_CREDENTIALS` env vars. The `VERTEXAI_LOCATION` default is `global` because Gemini 3.1 models only work with the global endpoint.
 
 ## Commands
 
