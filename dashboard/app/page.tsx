@@ -7,8 +7,9 @@ import ProblemExplorer from "./components/ProblemExplorer";
 import RunsExplorer from "./components/RunsExplorer";
 import GepaExperiments from "./components/GepaExperiments";
 import AutoResearchView from "./components/AutoResearchView";
+import GepaReplay from "./components/GepaReplay";
 
-const TABS = ["Leaderboard", "Model Breakdown", "Problems", "Runs", "GEPA Experiments", "AutoResearch"] as const;
+const TABS = ["Leaderboard", "Model Breakdown", "Problems", "Runs", "GEPA Experiments", "GEPA Replay", "AutoResearch"] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_SLUGS: Record<Tab, string> = {
@@ -17,6 +18,7 @@ const TAB_SLUGS: Record<Tab, string> = {
   "Problems": "problems",
   "Runs": "runs",
   "GEPA Experiments": "gepa",
+  "GEPA Replay": "replay",
   "AutoResearch": "autoresearch",
 };
 const SLUG_TO_TAB = Object.fromEntries(
@@ -137,6 +139,7 @@ export default function Home() {
               onNavigate={(runId) => navigate("GEPA Experiments", runId)}
             />
           )}
+          {activeTab === "GEPA Replay" && <GepaReplay key={tabKey} />}
           {activeTab === "AutoResearch" && <AutoResearchView key={tabKey} />}
         </div>
       </main>
