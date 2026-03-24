@@ -99,7 +99,7 @@ export default function ModelBreakdownView() {
     <div className="space-y-6">
       {/* TRUE vs FALSE Accuracy Scatter */}
       <div className="replay-panel p-6">
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-1">
           <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500">
             TRUE vs FALSE Accuracy — {BM_SHORT[scatterBenchmark] || scatterBenchmark}
           </h3>
@@ -120,7 +120,7 @@ export default function ModelBreakdownView() {
           Models above the diagonal are better at TRUE; below are better at FALSE.
           The key insight: most models are biased toward one direction.
         </p>
-        <ResponsiveContainer width="100%" height={500}>
+        <ResponsiveContainer width="100%" height={350}>
           <ScatterChart margin={{ left: 20, bottom: 20, top: 30 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#1e1e24" />
             <XAxis
@@ -128,21 +128,21 @@ export default function ModelBreakdownView() {
               dataKey="trueAcc"
               name="TRUE Accuracy"
               domain={scatterDomain.x}
-              tick={{ fill: "#52525b", fontSize: 12 }}
-              label={{ value: "TRUE Accuracy %", position: "bottom", fill: "#52525b", fontSize: 12 }}
+              tick={{ fill: "#52525b", fontSize: 10 }}
+              label={{ value: "TRUE Accuracy %", position: "bottom", fill: "#52525b", fontSize: 10 }}
             />
             <YAxis
               type="number"
               dataKey="falseAcc"
               name="FALSE Accuracy"
               domain={scatterDomain.y}
-              tick={{ fill: "#52525b", fontSize: 12 }}
+              tick={{ fill: "#52525b", fontSize: 10 }}
               label={{
                 value: "FALSE Accuracy %",
                 angle: -90,
                 position: "insideLeft",
                 fill: "#52525b",
-                fontSize: 12,
+                fontSize: 10,
               }}
             />
             <ZAxis range={[60, 60]} />
@@ -197,12 +197,12 @@ export default function ModelBreakdownView() {
       </div>
 
       {/* Per-model breakdown */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
         <label className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500">Model:</label>
         <select
           value={selectedModel}
           onChange={(e) => setSelectedModel(e.target.value)}
-          className="bg-[#0c0c0f] border border-[#1e1e24] rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-sky-700"
+          className="bg-[#0c0c0f] border border-[#1e1e24] rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-sky-700 w-full sm:w-auto"
         >
           {modelIds.map((id) => (
             <option key={id} value={id}>
@@ -226,8 +226,8 @@ export default function ModelBreakdownView() {
             }))}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#1e1e24" />
-            <XAxis dataKey="benchmark" tick={{ fill: "#52525b", fontSize: 12 }} />
-            <YAxis domain={[0, 100]} tick={{ fill: "#52525b", fontSize: 12 }} />
+            <XAxis dataKey="benchmark" tick={{ fill: "#52525b", fontSize: 10 }} />
+            <YAxis domain={[0, 100]} tick={{ fill: "#52525b", fontSize: 10 }} />
             <Tooltip
               contentStyle={{
                 background: "#141417",
@@ -249,6 +249,7 @@ export default function ModelBreakdownView() {
 
       {/* Summary table */}
       <div className="replay-panel overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[#1e1e24] text-[10px] uppercase tracking-wider text-zinc-600">
@@ -295,6 +296,7 @@ export default function ModelBreakdownView() {
               })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

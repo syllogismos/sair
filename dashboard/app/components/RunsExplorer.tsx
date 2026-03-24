@@ -118,7 +118,7 @@ export default function RunsExplorer() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="flex items-center gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <label className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500">Model:</label>
           <select
@@ -164,11 +164,11 @@ export default function RunsExplorer() {
             value={problemSearch}
             onChange={(e) => { setProblemSearch(e.target.value); resetPage(); }}
             placeholder="e.g. normal_0007"
-            className="bg-[#0c0c0f] border border-[#1e1e24] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-sky-800 w-40"
+            className="bg-[#0c0c0f] border border-[#1e1e24] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-sky-800 w-full sm:w-40"
           />
         </div>
         {data && (
-          <div className="ml-auto flex gap-3 text-sm">
+          <div className="flex gap-3 text-sm">
             <span className="text-zinc-500">{data.total.toLocaleString()} runs</span>
             <span className="text-zinc-500">·</span>
             <span className={data.total > 0 ? (data.correctCount / data.total >= 0.5 ? "text-emerald-400" : "text-red-400") : "text-zinc-500"}>
@@ -186,10 +186,10 @@ export default function RunsExplorer() {
             <thead>
               <tr className="border-b border-[#1e1e24]">
                 <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Model</th>
-                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Benchmark</th>
+                <th className="hidden md:table-cell text-left px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Benchmark</th>
                 <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Problem</th>
-                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Eq1</th>
-                <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Eq2</th>
+                <th className="hidden md:table-cell text-left px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Eq1</th>
+                <th className="hidden md:table-cell text-left px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Eq2</th>
                 <th className="text-center px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Truth</th>
                 <th className="text-center px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Correct?</th>
                 <th className="text-right px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Time</th>
@@ -211,10 +211,10 @@ export default function RunsExplorer() {
                     className="border-b border-[#1e1e24]/50 hover:bg-white/[0.01] transition-colors"
                   >
                     <td className="px-4 py-2 text-xs">{run.model_name || displayName(run.model_id)}</td>
-                    <td className="px-4 py-2 text-xs text-zinc-500">{BM_SHORT[run.benchmark_id] || run.benchmark_id}</td>
+                    <td className="hidden md:table-cell px-4 py-2 text-xs text-zinc-500">{BM_SHORT[run.benchmark_id] || run.benchmark_id}</td>
                     <td className="px-4 py-2 font-mono text-xs text-zinc-500">{run.problem_id}</td>
-                    <td className="px-4 py-2 font-mono text-xs max-w-[160px] truncate">{run.equation1}</td>
-                    <td className="px-4 py-2 font-mono text-xs max-w-[160px] truncate">{run.equation2}</td>
+                    <td className="hidden md:table-cell px-4 py-2 font-mono text-xs max-w-[160px] truncate">{run.equation1}</td>
+                    <td className="hidden md:table-cell px-4 py-2 font-mono text-xs max-w-[160px] truncate">{run.equation2}</td>
                     <td className="px-4 py-2 text-center">
                       <span className={`text-xs ${run.answer ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
                         {run.answer ? "T" : "F"}
@@ -250,7 +250,7 @@ export default function RunsExplorer() {
 
         {/* Pagination */}
         {data && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-[#1e1e24]">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:justify-between px-4 py-3 border-t border-[#1e1e24]">
             <span className="text-xs text-zinc-500">
               Page {data.page + 1} of {data.totalPages} ({data.total.toLocaleString()} total)
             </span>
@@ -291,11 +291,11 @@ export default function RunsExplorer() {
       {/* Full response modal */}
       {(selectedRun || loadingRun) && (
         <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6"
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-6"
           onClick={() => { if (!loadingRun) setSelectedRun(null); }}
         >
           <div
-            className="replay-panel max-w-3xl w-full max-h-[80vh] flex flex-col"
+            className="replay-panel max-w-[95vw] sm:max-w-3xl w-full max-h-[80vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {loadingRun ? (
@@ -319,7 +319,7 @@ export default function RunsExplorer() {
                   </button>
                 </div>
                 <div className="px-6 py-4 space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-1">Equation 1</div>
                       <div className="font-mono text-xs bg-[#0c0c0f] rounded-lg p-2 border border-[#1e1e24]">

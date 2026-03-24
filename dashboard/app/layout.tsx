@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "SAIR Equational Theories Dashboard",
   description: "Explore benchmark data for the Mathematics Distillation Challenge",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
 };
 
 export default function RootLayout({

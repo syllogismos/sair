@@ -131,14 +131,14 @@ function ResponseModal({
 }) {
   return (
     <div
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6"
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-6"
       onClick={onClose}
     >
       <div
-        className="replay-panel max-w-3xl w-full max-h-[80vh] flex flex-col"
+        className="replay-panel max-w-[95vw] sm:max-w-3xl w-full max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e24]">
+        <div className="flex items-center justify-between px-3 sm:px-6 py-4 border-b border-[#1e1e24]">
           <div>
             <h3 className="text-sm font-medium">
               <span
@@ -166,11 +166,11 @@ function ResponseModal({
           </button>
         </div>
         {call.error && (
-          <div className="px-6 py-3 bg-red-950/20 border-b border-red-900/30">
+          <div className="px-3 sm:px-6 py-3 bg-red-950/20 border-b border-red-900/30">
             <div className="text-xs text-red-400 font-mono">{call.error}</div>
           </div>
         )}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 space-y-4">
           {call.prompt_full && (
             <div>
               <div className="text-xs text-zinc-500 mb-1">Prompt</div>
@@ -234,7 +234,7 @@ function AccuracyChart({ data, totalMetricCalls, valSize }: { data: MetricBucket
 
   return (
     <div>
-      <div className="flex items-baseline gap-3 mb-2">
+      <div className="flex items-baseline gap-3 mb-2 flex-wrap">
         <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500">
           Evaluation Accuracy Over Time
         </h3>
@@ -416,7 +416,7 @@ function CandidatesTable({
               }`}
             >
               <div
-                className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-white/[0.02] transition-colors"
+                className="flex items-center flex-wrap gap-3 px-2 sm:px-4 py-2.5 cursor-pointer hover:bg-white/[0.02] transition-colors"
                 onClick={() =>
                   setExpanded(isExpanded ? null : c.candidate_idx)
                 }
@@ -426,7 +426,7 @@ function CandidatesTable({
                 </span>
 
                 {/* Score bar */}
-                <div className="flex items-center gap-2 w-32">
+                <div className="flex items-center gap-2 w-24 sm:w-32">
                   <div className="flex-1 h-2 bg-[#1e1e24] rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full ${
@@ -475,7 +475,7 @@ function CandidatesTable({
               </div>
 
               {isExpanded && (
-                <div className="px-4 pb-3 border-t border-[#1e1e24]/50">
+                <div className="px-2 sm:px-4 pb-3 border-t border-[#1e1e24]/50">
                   {Object.entries(instructions).map(([name, text]) => (
                     <div key={name} className="mt-2">
                       <div className="text-xs text-zinc-500 mb-1">
@@ -507,7 +507,7 @@ function ParetoSummary({ data, valSize }: { data: ParetoEntry[]; valSize: number
       <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-2">
         Pareto Frontier
       </h3>
-      <div className="replay-panel p-4">
+      <div className="replay-panel p-3 sm:p-4 overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
             <tr className="text-left text-[10px] uppercase tracking-wider text-zinc-600 border-b border-[#1e1e24]">
@@ -573,7 +573,7 @@ function RecentMetricCalls({ data }: { data: MetricCall[] }) {
           />
         ))}
       </div>
-      <div className="flex items-center gap-4 mt-2 text-xs text-zinc-600">
+      <div className="flex items-center gap-4 mt-2 text-xs text-zinc-600 flex-wrap">
         <span className="flex items-center gap-1">
           <span className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500/60 inline-block" /> Correct
         </span>
@@ -586,9 +586,9 @@ function RecentMetricCalls({ data }: { data: MetricCall[] }) {
       </div>
 
       {selected && (
-        <div className="mt-3 bg-[#0c0c0f] border border-[#1e1e24] rounded-lg p-4 text-sm">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
+        <div className="mt-3 bg-[#0c0c0f] border border-[#1e1e24] rounded-lg p-3 sm:p-4 text-sm">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div className="flex items-center gap-3 flex-wrap">
               <span className={`px-2 py-0.5 text-xs rounded border ${
                 selected.score >= 1.0
                   ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
@@ -732,7 +732,7 @@ function LiveCandidates({ iterations }: { iterations: Iteration[] }) {
               }`}
             >
               <div
-                className={`flex items-center gap-3 px-4 py-2.5 ${
+                className={`flex items-center flex-wrap gap-3 px-2 sm:px-4 py-2.5 ${
                   hasInstructions
                     ? "cursor-pointer hover:bg-white/[0.02]"
                     : ""
@@ -747,7 +747,7 @@ function LiveCandidates({ iterations }: { iterations: Iteration[] }) {
                 </span>
 
                 {c.bestScore != null && (
-                  <div className="flex items-center gap-2 w-32">
+                  <div className="flex items-center gap-2 w-24 sm:w-32">
                     <div className="flex-1 h-2 bg-[#1e1e24] rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${
@@ -800,7 +800,7 @@ function LiveCandidates({ iterations }: { iterations: Iteration[] }) {
               </div>
 
               {isExpanded && hasInstructions && (
-                <div className="px-4 pb-3 border-t border-[#1e1e24]/50">
+                <div className="px-2 sm:px-4 pb-3 border-t border-[#1e1e24]/50">
                   {Object.entries(c.instructions).map(([name, text]) => (
                     <div key={name} className="mt-2">
                       <div className="text-xs text-zinc-500 mb-1">
@@ -856,7 +856,7 @@ function IterationsTimeline({ iterations, totalMetricCalls, valSize }: { iterati
                 key={iterNum}
                 className="border border-[#1e1e24] rounded-lg p-3 bg-[#141417]"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-mono text-zinc-500">
                     iter {iterNum}
                   </span>
@@ -1114,13 +1114,13 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
         &larr; Back to runs
       </button>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <h2 className="text-lg font-semibold">{run.name || run.run_id}</h2>
         <StatusBadge status={run.status} />
-        <span className="text-xs text-zinc-500 font-mono">{run.run_id}</span>
+        <span className="text-xs text-zinc-500 font-mono break-all">{run.run_id}</span>
       </div>
 
-      <div className="grid grid-cols-4 sm:grid-cols-8 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
         {[
           { label: "Solver", value: run.solver },
           { label: "Auto", value: run.auto },
@@ -1240,6 +1240,7 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
             <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-2">
               Model Breakdown
             </h3>
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[10px] uppercase tracking-wider text-zinc-600 border-b border-[#1e1e24]">
@@ -1296,6 +1297,7 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Recent calls */}
@@ -1314,7 +1316,7 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void; }) {
                       : "border-[#1e1e24] bg-[#141417] hover:bg-white/[0.03]"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <span className="text-zinc-500">
                       {new Date(c.timestamp * 1000).toLocaleTimeString()}
                     </span>
@@ -1439,17 +1441,17 @@ export default function GepaExperiments({
   }
 
   return (
-    <div>
+    <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-wider text-zinc-600 border-b border-[#1e1e24]">
             <th className="pb-2 font-normal">Run</th>
             <th className="pb-2 font-normal">Status</th>
-            <th className="pb-2 text-right font-normal">Best Score</th>
-            <th className="pb-2 text-right font-normal">Candidates</th>
+            <th className="pb-2 text-right font-normal">Score</th>
+            <th className="pb-2 text-right font-normal">#</th>
             <th className="pb-2 text-right font-normal">Cost</th>
-            <th className="pb-2 text-right font-normal">Duration</th>
-            <th className="pb-2 pl-4 font-normal">Started</th>
+            <th className="pb-2 text-right font-normal hidden sm:table-cell">Duration</th>
+            <th className="pb-2 pl-4 font-normal hidden sm:table-cell">Started</th>
           </tr>
         </thead>
         <tbody>
@@ -1483,13 +1485,13 @@ export default function GepaExperiments({
               <td className="py-2 text-right">
                 {r.num_candidates ?? "—"}
               </td>
-              <td className="py-2 text-right">
+              <td className="py-2 text-right whitespace-nowrap">
                 {formatCost(r.total_cost || 0)}
               </td>
-              <td className="py-2 text-right">
+              <td className="py-2 text-right hidden sm:table-cell">
                 {formatDuration(r.total_duration || 0)}
               </td>
-              <td className="py-2 text-xs text-zinc-500 pl-4">
+              <td className="py-2 text-xs text-zinc-500 pl-4 hidden sm:table-cell">
                 {formatTime(r.started_at)}
               </td>
             </tr>

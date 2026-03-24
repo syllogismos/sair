@@ -99,7 +99,7 @@ export default function ProblemExplorer() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="flex items-center gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <label className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500">Dataset:</label>
           <select
@@ -129,9 +129,9 @@ export default function ProblemExplorer() {
           placeholder="Search equations..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="bg-[#0c0c0f] border border-[#1e1e24] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-sky-800 w-64"
+          className="bg-[#0c0c0f] border border-[#1e1e24] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-sky-800 w-full sm:w-64"
         />
-        <div className="ml-auto flex gap-3 text-sm text-zinc-500">
+        <div className="flex gap-3 text-xs sm:text-sm text-zinc-500">
           <span>{stats.total} problems</span>
           <span className="text-[#22c55e]">{stats.trueCount} TRUE</span>
           <span className="text-[#ef4444]">{stats.falseCount} FALSE</span>
@@ -236,7 +236,7 @@ export default function ProblemExplorer() {
               Close
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-1">Equation 1</div>
               <div className="font-mono text-sm bg-[#0c0c0f] rounded-lg p-3 border border-[#1e1e24]">

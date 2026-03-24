@@ -89,8 +89,8 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="border-b border-[#1e1e24] px-6 py-4" style={{ background: "linear-gradient(180deg, #111114 0%, #0c0c0f 100%)" }}>
-        <div className="max-w-[1400px] mx-auto flex items-center justify-between">
+      <header className="border-b border-[#1e1e24] px-3 sm:px-6 py-4" style={{ background: "linear-gradient(180deg, #111114 0%, #0c0c0f 100%)" }}>
+        <div className="max-w-[1400px] mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div className="flex items-center gap-3">
             <div>
               <h1 className="text-lg font-semibold tracking-tight text-zinc-100">
@@ -100,19 +100,17 @@ export default function Home() {
                 SAIR Mathematics Distillation Challenge — Stage 1
               </p>
             </div>
-            {isLoading && (
-              <div className="flex items-center gap-1.5 ml-3 px-2.5 py-1 rounded-md bg-[#0c0c0f] border border-[#1e1e24]">
-                <div className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse shadow-[0_0_6px_rgba(56,189,248,0.4)]" />
-                <span className="text-[10px] text-zinc-600 uppercase tracking-wider">loading</span>
-              </div>
-            )}
+            <div className={`flex items-center gap-1.5 ml-3 px-2.5 py-1 rounded-md bg-[#0c0c0f] border border-[#1e1e24] transition-opacity ${isLoading ? "opacity-100" : "opacity-0"}`}>
+              <div className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse shadow-[0_0_6px_rgba(56,189,248,0.4)]" />
+              <span className="text-[10px] text-zinc-600 uppercase tracking-wider">loading</span>
+            </div>
           </div>
-          <div className="flex items-center gap-0.5 bg-[#0c0c0f] rounded-lg p-1 border border-[#1e1e24]">
+          <div className="flex items-center gap-0.5 bg-[#0c0c0f] rounded-lg p-1 border border-[#1e1e24] overflow-x-auto scrollbar-hide w-full sm:w-auto">
             {TABS.map((tab) => (
               <button
                 key={tab}
                 onClick={() => navigate(tab)}
-                className={`px-3 py-1.5 text-[11px] rounded-md transition-all ${
+                className={`px-3 py-1.5 text-[10px] sm:text-[11px] rounded-md transition-all whitespace-nowrap ${
                   activeTab === tab
                     ? "text-sky-300 font-semibold"
                     : "text-zinc-600 hover:text-zinc-300 hover:bg-white/[0.02]"
@@ -130,7 +128,7 @@ export default function Home() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 px-6 py-6">
+      <main className="flex-1 px-3 sm:px-6 py-4 sm:py-6">
         <div className="max-w-[1400px] mx-auto">
           {activeTab === "Leaderboard" && <LeaderboardView key={tabKey} />}
           {activeTab === "Model Breakdown" && <ModelBreakdownView key={tabKey} />}

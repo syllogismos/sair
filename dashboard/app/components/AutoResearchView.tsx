@@ -180,7 +180,7 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void }) {
       </div>
 
       {/* Token & cost breakdown */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: "LLM Calls", value: stats.total_calls?.toString() || "0" },
           { label: "Prompt Tokens", value: stats.prompt_tokens?.toLocaleString() || "0" },
@@ -227,7 +227,7 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void }) {
               }`}
               onClick={() => setSelectedProblem(p)}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <span className={p.correct ? "text-emerald-400" : "text-red-400"}>
                   {p.correct ? "OK" : "XX"}
                 </span>
@@ -238,7 +238,7 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void }) {
                 <span className="text-zinc-600">
                   pred={p.predicted_answer === null ? "\u2014" : p.predicted_answer ? "TRUE" : "FALSE"}
                 </span>
-                <span className="text-zinc-600 ml-auto">
+                <span className="text-zinc-600 sm:ml-auto">
                   {p.prompt_tokens}+{p.completion_tokens} tok
                 </span>
                 <span className="text-zinc-600">{formatCost(p.cost_usd)}</span>
@@ -261,7 +261,7 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void }) {
           onClick={() => setSelectedProblem(null)}
         >
           <div
-            className="replay-panel p-6 max-w-3xl w-full max-h-[85vh] overflow-y-auto m-4"
+            className="replay-panel p-6 max-w-[95vw] sm:max-w-3xl w-full max-h-[85vh] overflow-y-auto m-4"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -291,7 +291,7 @@ function RunDetail({ runId, onBack }: { runId: string; onBack: () => void }) {
             </div>
 
             {/* Stats row */}
-            <div className="grid grid-cols-4 gap-3 mb-5 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 text-xs">
               {[
                 { label: "Cost", value: formatCost(selectedProblem.cost_usd) },
                 { label: "Latency", value: `${selectedProblem.duration_secs.toFixed(2)}s` },
@@ -414,7 +414,7 @@ export default function AutoResearchView() {
   return (
     <div className="space-y-5">
       {/* Summary row */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: "Experiments", value: experiments.length.toString() },
           { label: "Best Accuracy", value: `${(bestAcc * 100).toFixed(1)}%` },
@@ -432,6 +432,7 @@ export default function AutoResearchView() {
       <ProgressChart experiments={experiments} />
 
       {/* Experiments table */}
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left border-b border-[#1e1e24]/50">
@@ -439,11 +440,11 @@ export default function AutoResearchView() {
             <th className="pb-2 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Run</th>
             <th className="pb-2 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Status</th>
             <th className="pb-2 text-right text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Accuracy</th>
-            <th className="pb-2 text-right text-[10px] uppercase tracking-wider text-zinc-600 font-normal">TRUE / FALSE</th>
+            <th className="hidden sm:table-cell pb-2 text-right text-[10px] uppercase tracking-wider text-zinc-600 font-normal">TRUE / FALSE</th>
             <th className="pb-2 text-right text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Problems</th>
             <th className="pb-2 text-right text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Cost</th>
-            <th className="pb-2 text-right text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Latency</th>
-            <th className="pb-2 text-right text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Sheet KB</th>
+            <th className="hidden sm:table-cell pb-2 text-right text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Latency</th>
+            <th className="hidden sm:table-cell pb-2 text-right text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Sheet KB</th>
             <th className="pb-2 text-[10px] uppercase tracking-wider text-zinc-600 font-normal">Time</th>
           </tr>
         </thead>
@@ -461,15 +462,15 @@ export default function AutoResearchView() {
               </td>
               <td className="py-2"><StatusBadge status={exp.status} /></td>
               <td className="py-2 text-right"><AccuracyBadge accuracy={exp.accuracy} /></td>
-              <td className="py-2 text-right text-xs font-mono text-zinc-500">
+              <td className="hidden sm:table-cell py-2 text-right text-xs font-mono text-zinc-500">
                 {(exp.true_accuracy * 100).toFixed(0)}% / {(exp.false_accuracy * 100).toFixed(0)}%
               </td>
               <td className="py-2 text-right">{exp.total_problems}</td>
               <td className="py-2 text-right text-zinc-500">{formatCost(exp.total_cost_usd)}</td>
-              <td className="py-2 text-right text-xs text-zinc-500">
+              <td className="hidden sm:table-cell py-2 text-right text-xs text-zinc-500">
                 {exp.avg_latency ? `${exp.avg_latency.toFixed(1)}s` : "\u2014"}
               </td>
-              <td className="py-2 text-right text-xs text-zinc-500">
+              <td className="hidden sm:table-cell py-2 text-right text-xs text-zinc-500">
                 {(exp.cheatsheet_bytes / 1024).toFixed(1)}
               </td>
               <td className="py-2 text-xs text-zinc-500">{formatTime(exp.timestamp)}</td>
@@ -477,6 +478,7 @@ export default function AutoResearchView() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

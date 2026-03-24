@@ -51,7 +51,7 @@ function formatSize(bytes: number): string {
 
 // Reusable panel wrapper
 function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`replay-panel px-5 py-4 ${className}`}>{children}</div>;
+  return <div className={`replay-panel px-3 sm:px-5 py-3 sm:py-4 ${className}`}>{children}</div>;
 }
 
 function SectionLabel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -233,7 +233,7 @@ export default function GepaReplay() {
     <div className="space-y-3">
       {/* ── File Picker ── */}
       <Panel>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-2.5">
             <div className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_6px_rgba(56,189,248,0.4)]" />
             <span className="text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">Replay</span>
@@ -250,7 +250,7 @@ export default function GepaReplay() {
             ))}
           </select>
           {data && (
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               {[
                 [`${data.num_candidates}`, "candidates"],
                 [`${data.trace.length}`, "iterations"],
@@ -284,8 +284,8 @@ export default function GepaReplay() {
           />
 
           {/* ── Main Layout ── */}
-          <div className="grid grid-cols-12 gap-3">
-            <div className="col-span-5 space-y-3">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+            <div className="lg:col-span-5 space-y-3">
               <CandidateTree
                 data={data}
                 currentStep={currentStep}
@@ -296,7 +296,7 @@ export default function GepaReplay() {
               />
               <IterationDetail data={data} entry={stateAtStep.entry} animPhase={animPhase} />
             </div>
-            <div className="col-span-7 space-y-3">
+            <div className="lg:col-span-7 space-y-3">
               <MinibatchView entry={stateAtStep.entry} animPhase={animPhase} />
               <CandidateScoreChart
                 data={data}
@@ -343,80 +343,86 @@ function PlaybackControls({
 
   return (
     <Panel>
-      <div className="flex items-center gap-3">
-        {/* Transport controls */}
-        <div className="flex items-center gap-1 bg-[#0c0c0f] rounded-lg p-1 border border-[#1e1e24]">
-          <button onClick={onStepBack} disabled={currentStep === 0}
-            className="w-8 h-8 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-sm">
-            &#x23EE;
-          </button>
-          <button onClick={onTogglePlay}
-            className="w-10 h-8 flex items-center justify-center rounded-md font-semibold text-xs transition-all"
-            style={{
-              background: playing ? "linear-gradient(135deg, #dc2626, #b91c1c)" : "linear-gradient(135deg, #0ea5e9, #0284c7)",
-              color: "#fff",
-              boxShadow: playing ? "0 0 10px rgba(220,38,38,0.3)" : "0 0 10px rgba(14,165,233,0.3)",
-            }}>
-            {playing ? "||" : "\u25B6"}
-          </button>
-          <button onClick={onStepForward} disabled={currentStep >= totalSteps - 1}
-            className="w-8 h-8 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-sm">
-            &#x23ED;
-          </button>
-        </div>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+        {/* Transport + Timeline row */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+          {/* Transport controls */}
+          <div className="flex items-center gap-1 bg-[#0c0c0f] rounded-lg p-1 border border-[#1e1e24] shrink-0">
+            <button onClick={onStepBack} disabled={currentStep === 0}
+              className="w-8 h-8 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-sm">
+              &#x23EE;
+            </button>
+            <button onClick={onTogglePlay}
+              className="w-10 h-8 flex items-center justify-center rounded-md font-semibold text-xs transition-all"
+              style={{
+                background: playing ? "linear-gradient(135deg, #dc2626, #b91c1c)" : "linear-gradient(135deg, #0ea5e9, #0284c7)",
+                color: "#fff",
+                boxShadow: playing ? "0 0 10px rgba(220,38,38,0.3)" : "0 0 10px rgba(14,165,233,0.3)",
+              }}>
+              {playing ? "||" : "\u25B6"}
+            </button>
+            <button onClick={onStepForward} disabled={currentStep >= totalSteps - 1}
+              className="w-8 h-8 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-sm">
+              &#x23ED;
+            </button>
+          </div>
 
-        {/* Timeline */}
-        <div className="flex-1 flex flex-col gap-1">
-          <input
-            type="range" min={0} max={totalSteps - 1} value={currentStep}
-            onChange={(e) => onGoToStep(parseInt(e.target.value))}
-            className="replay-slider w-full"
-          />
-          {/* Phase pips */}
-          <div className="flex items-center gap-1 px-0.5">
-            {phases.map((p) => {
-              const isActive = animPhase === p;
-              const isPast = phases.indexOf(animPhase) > phases.indexOf(p);
-              return (
-                <div key={p} className="flex items-center gap-1">
-                  <div className={`w-1.5 h-1.5 rounded-full transition-all ${
-                    isActive ? "bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.6)] phase-active" :
-                    isPast ? "bg-sky-700" : "bg-zinc-800"
-                  }`} />
-                  <span className={`text-[8px] tracking-wider uppercase ${
-                    isActive ? "text-sky-400" : isPast ? "text-zinc-600" : "text-zinc-800"
-                  }`}>{phaseLabels[p]}</span>
-                  {p !== "done" && <div className={`w-3 h-px ${isPast ? "bg-sky-800" : "bg-zinc-800"}`} />}
-                </div>
-              );
-            })}
+          {/* Timeline */}
+          <div className="flex-1 flex flex-col gap-1 min-w-0">
+            <input
+              type="range" min={0} max={totalSteps - 1} value={currentStep}
+              onChange={(e) => onGoToStep(parseInt(e.target.value))}
+              className="replay-slider w-full"
+            />
+            {/* Phase pips — hidden on mobile */}
+            <div className="hidden sm:flex items-center gap-1 px-0.5">
+              {phases.map((p) => {
+                const isActive = animPhase === p;
+                const isPast = phases.indexOf(animPhase) > phases.indexOf(p);
+                return (
+                  <div key={p} className="flex items-center gap-1">
+                    <div className={`w-1.5 h-1.5 rounded-full transition-all ${
+                      isActive ? "bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.6)] phase-active" :
+                      isPast ? "bg-sky-700" : "bg-zinc-800"
+                    }`} />
+                    <span className={`text-[8px] tracking-wider uppercase ${
+                      isActive ? "text-sky-400" : isPast ? "text-zinc-600" : "text-zinc-800"
+                    }`}>{phaseLabels[p]}</span>
+                    {p !== "done" && <div className={`w-3 h-px ${isPast ? "bg-sky-800" : "bg-zinc-800"}`} />}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* Iteration counter */}
-        <div className="text-right min-w-[90px]">
-          <div className="font-mono text-lg leading-none text-zinc-200 tabular-nums">
-            {String(currentStep).padStart(2, "0")}
-            <span className="text-zinc-700 text-sm">/{totalSteps - 1}</span>
+        {/* Iteration counter + Speed row */}
+        <div className="flex items-center gap-3 justify-between sm:justify-end">
+          {/* Iteration counter */}
+          <div className="text-right min-w-[90px]">
+            <div className="font-mono text-lg leading-none text-zinc-200 tabular-nums">
+              {String(currentStep).padStart(2, "0")}
+              <span className="text-zinc-700 text-sm">/{totalSteps - 1}</span>
+            </div>
+            <div className="text-[8px] tracking-widest text-zinc-600 uppercase mt-0.5">iteration</div>
           </div>
-          <div className="text-[8px] tracking-widest text-zinc-600 uppercase mt-0.5">iteration</div>
-        </div>
 
-        {/* Speed */}
-        <div className="flex flex-col items-center gap-1">
-          <div className="flex gap-0.5 bg-[#0c0c0f] rounded-md p-0.5 border border-[#1e1e24]">
-            {[0.25, 0.5, 1, 2].map((s) => (
-              <button key={s} onClick={() => onSetSpeed(s)}
-                className={`px-2 py-1 text-[10px] font-mono rounded transition-all ${
-                  speed === s
-                    ? "bg-sky-900/60 text-sky-300 shadow-[0_0_8px_rgba(56,189,248,0.15)]"
-                    : "text-zinc-600 hover:text-zinc-400"
-                }`}>
-                {s}x
-              </button>
-            ))}
+          {/* Speed */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="flex gap-0.5 bg-[#0c0c0f] rounded-md p-0.5 border border-[#1e1e24]">
+              {[0.25, 0.5, 1, 2].map((s) => (
+                <button key={s} onClick={() => onSetSpeed(s)}
+                  className={`px-2 py-1 text-[10px] font-mono rounded transition-all ${
+                    speed === s
+                      ? "bg-sky-900/60 text-sky-300 shadow-[0_0_8px_rgba(56,189,248,0.15)]"
+                      : "text-zinc-600 hover:text-zinc-400"
+                  }`}>
+                  {s}x
+                </button>
+              ))}
+            </div>
+            <span className="text-[8px] tracking-widest text-zinc-700 uppercase">speed</span>
           </div>
-          <span className="text-[8px] tracking-widest text-zinc-700 uppercase">speed</span>
         </div>
       </div>
     </Panel>
@@ -542,7 +548,7 @@ function CandidateTree({
         })}
       </svg>
 
-      <div className="flex gap-4 mt-3 pt-3 border-t border-[#1e1e24]">
+      <div className="flex flex-wrap gap-3 sm:gap-4 mt-3 pt-3 border-t border-[#1e1e24]">
         {[
           ["#d97706", "#2a1f05", "Selected parent"],
           ["#0ea5e9", "#0c2d48", "New candidate"],
@@ -570,7 +576,7 @@ function IterationDetail({ data, entry, animPhase }: { data: ReplayData; entry: 
 
   return (
     <Panel>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <SectionLabel>Iteration {entry.i}</SectionLabel>
         <div className="flex items-center gap-1.5">
           {entry.invoked_merge && <Badge variant="warn">merge</Badge>}
@@ -627,7 +633,7 @@ function MinibatchView({ entry, animPhase }: { entry: TraceEntry; animPhase: str
 
   return (
     <Panel>
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
         <SectionLabel>Minibatch Evaluation</SectionLabel>
         <span className="text-[10px] text-zinc-600 font-mono">{entry.subsample_ids.length} examples</span>
       </div>
@@ -794,7 +800,7 @@ function FullValEvaluation({ data, entry, animPhase }: { data: ReplayData; entry
 
   return (
     <Panel>
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
         <div className="flex items-center gap-3">
           <SectionLabel>Full Validation</SectionLabel>
           {wasAccepted ? (
@@ -821,17 +827,17 @@ function FullValEvaluation({ data, entry, animPhase }: { data: ReplayData; entry
       <SectionDesc>When a candidate passes the minibatch check, it&apos;s evaluated on all {allKeys.length} validation instances. This shows which problems it gained or lost vs. its parent.</SectionDesc>
       <div className="mb-3" />
 
-      <div className="h-[340px] flex flex-col">
+      <div className="h-[260px] sm:h-[340px] flex flex-col">
         {!wasAccepted ? (
           <div className="flex-1 flex items-center justify-center text-xs text-zinc-700">
             No full evaluation — candidate rejected at minibatch stage
           </div>
         ) : (
           <>
-            <div className="flex gap-1.5 mb-3 shrink-0">
+            <div className="flex flex-wrap gap-1.5 mb-3 shrink-0">
               {filterButtons.map(({ key, label, count, variant }) => (
                 <button key={key} onClick={() => setFilterMode(key)}
-                  className={`px-2.5 py-1 text-[10px] font-medium rounded-md border transition-all ${
+                  className={`px-2 sm:px-2.5 py-1 text-[10px] font-medium rounded-md border transition-all ${
                     filterMode === key
                       ? variant === "info" ? "bg-sky-950/50 text-sky-300 border-sky-800/50"
                       : variant === "success" ? "bg-emerald-950/50 text-emerald-300 border-emerald-800/50"
@@ -899,7 +905,7 @@ function InstancePixelGrid({ allKeys, parentScores, newScores }: {
 }) {
   return (
     <div>
-      <div className="flex items-center gap-3 mb-2 text-[9px] text-zinc-600 uppercase tracking-wider">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 text-[9px] text-zinc-600 uppercase tracking-wider">
         <span>Per instance:</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-emerald-400 inline-block" /> gained</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-red-400 inline-block" /> lost</span>
@@ -956,13 +962,13 @@ function CandidateInstanceHeatmap({
 
   return (
     <Panel>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-3">
           <SectionLabel>Instance Heatmap</SectionLabel>
           <span className="text-[10px] text-zinc-700 font-mono">{candidates.length}C × {displayKeys.length} inst.</span>
         </div>
         <button onClick={() => setShowOnlyDisagreements(!showOnlyDisagreements)}
-          className={`px-2.5 py-1 text-[10px] font-medium rounded-md border transition-all ${
+          className={`px-2 sm:px-2.5 py-1 text-[10px] font-medium rounded-md border transition-all ${
             showOnlyDisagreements
               ? "bg-sky-950/50 text-sky-300 border-sky-800/50"
               : "border-[#1e1e24] text-zinc-600 hover:text-zinc-400"
@@ -1011,7 +1017,7 @@ function CandidateInstanceHeatmap({
 
       <div className="h-7 mt-2">
         {hoveredInstance ? (
-          <div className="text-xs text-zinc-500 bg-[#0c0c0f] rounded-md px-3 py-1.5 border border-[#1e1e24] font-mono">
+          <div className="text-xs text-zinc-500 bg-[#0c0c0f] rounded-md px-2 sm:px-3 py-1.5 border border-[#1e1e24] font-mono overflow-x-auto">
             <span className="text-zinc-600 text-[10px] uppercase tracking-wider mr-2">idx {hoveredInstance}</span>
             {candidates.map((c) => {
               const score = (data.val_subscores[c]?.[hoveredInstance] ?? 0) >= 1;
@@ -1054,7 +1060,7 @@ function CandidateInstructions({ data, discoveredCandidates, highlightCandidate 
             <div key={c}>
               <button
                 onClick={() => setExpanded(isExpanded ? null : c)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg text-xs flex items-center gap-3 transition-all ${
+                className={`w-full text-left px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg text-xs flex items-center gap-2 sm:gap-3 transition-all ${
                   isHighlighted
                     ? "bg-sky-950/30 border border-sky-800/30"
                     : isExpanded
@@ -1072,11 +1078,11 @@ function CandidateInstructions({ data, discoveredCandidates, highlightCandidate 
                 <span className="text-zinc-700 ml-auto text-[10px]">{isExpanded ? "▾" : "▸"}</span>
               </button>
               {isExpanded && instructions && (
-                <div className="ml-10 mt-1.5 mb-2.5">
+                <div className="ml-2 sm:ml-10 mt-1.5 mb-2.5">
                   {Object.entries(instructions).map(([name, text]) => (
                     <div key={name} className="mb-2">
                       <div className="text-[9px] text-zinc-600 mb-1 uppercase tracking-wider">{name}</div>
-                      <pre className="text-[11px] text-zinc-400 bg-[#0c0c0f] rounded-lg p-4 border border-[#1e1e24] whitespace-pre-wrap break-words max-h-[300px] overflow-y-auto leading-relaxed">
+                      <pre className="text-[11px] text-zinc-400 bg-[#0c0c0f] rounded-lg p-2 sm:p-4 border border-[#1e1e24] whitespace-pre-wrap break-words max-h-[300px] overflow-y-auto leading-relaxed">
                         {text}
                       </pre>
                     </div>
