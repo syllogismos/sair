@@ -211,20 +211,21 @@ Open http://localhost:3001
 ## Project Structure
 
 ```
+baby_run.py          — small test run (20 problems, same models as full run)
+baby_run_claude.py   — test run using Claude Code SDK
 src/
-  run_gepa.py      — main GEPA optimization script
-  baby_run.py      — small test run (20 problems)
-  solver.py        — DSPy solver modules (V1, V2, V3)
-  metric.py        — scoring with reference solution feedback
-  data.py          — data loading and train/val split
-  observer.py      — SQLite logging for LLM calls + GEPA events
-  cc_adapter.py    — Claude Code SDK adapter (slow, see warning)
-  export.py        — export optimized prompt to submission template
+  run_gepa.py        — main GEPA optimization script
+  solver.py          — DSPy solver modules (V1, V2, V3)
+  metric.py          — scoring with reference solution feedback
+  data.py            — data loading and train/val split
+  observer.py        — SQLite logging for LLM calls + GEPA events
+  cc_adapter.py      — Claude Code SDK adapter (slow, see warning)
+  export.py          — export optimized prompt to submission template
 data/
-  problems_*.jsonl — competition problems
-  benchmark_*      — benchmark model runs (download from HuggingFace)
+  problems_*.jsonl   — competition problems
+  benchmark_*        — benchmark model runs (download from HuggingFace)
 dashboard/
-  app/             — Next.js app with API routes and components
+  app/               — Next.js app with API routes and components
 gepa_logs/
-  <run_id>/        — per-run checkpoints and optimized solvers
+  <run_id>/          — per-run checkpoints and optimized solvers
 ```
