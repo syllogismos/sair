@@ -121,6 +121,52 @@ class GEPAObserver(BaseCallback):
                 best_candidate_idxs TEXT
             );
             CREATE INDEX IF NOT EXISTS idx_pareto_run ON gepa_pareto(run_id);
+
+            -- Standalone evaluation runs (separate from GEPA optimization)
+            CREATE TABLE IF NOT EXISTS eval_runs (
+                eval_id TEXT PRIMARY KEY,
+                gepa_run_id TEXT,
+                solver_path TEXT,
+                solver_version TEXT,
+                student_model TEXT,
+                benchmark_subset TEXT,
+                problem_count INTEGER,
+                started_at REAL,
+                finished_at REAL,
+                status TEXT DEFAULT 'running',
+                accuracy REAL,
+                f1_score REAL,
+                tp INTEGER DEFAULT 0,
+                fp INTEGER DEFAULT 0,
+                fn INTEGER DEFAULT 0,
+                tn INTEGER DEFAULT 0,
+                unparsed INTEGER DEFAULT 0,
+                parse_success_rate REAL,
+                avg_cost_usd REAL,
+                avg_time_secs REAL,
+                total_cost_usd REAL,
+                display_name TEXT,
+                notes TEXT
+            );
+
+            -- Per-problem results for evaluation runs
+            CREATE TABLE IF NOT EXISTS eval_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                eval_id TEXT,
+                problem_id TEXT,
+                equation1 TEXT,
+                equation2 TEXT,
+                expected BOOLEAN,
+                predicted BOOLEAN,
+                correct BOOLEAN,
+                response TEXT,
+                elapsed_seconds REAL,
+                cost_usd REAL,
+                prompt_tokens INTEGER,
+                completion_tokens INTEGER,
+                error TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_eval_results_eval ON eval_results(eval_id);
         """)
 
         self.db.execute(

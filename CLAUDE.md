@@ -28,12 +28,22 @@ Submission is a Jinja2 prompt template with `{{ equation1 }}`, `{{ equation2 }}`
 
 ```bash
 # Run GEPA optimization (main workflow)
-python src/run_gepa.py --solver v1 --auto light
-python src/run_gepa.py --solver v2 --auto medium --cheatsheet cheatsheet.txt
-python src/run_gepa.py --solver v3 --auto heavy --use-cc  # uses Claude Code SDK for reflection
+uv run python src/run_gepa.py --solver v1 --auto light
+uv run python src/run_gepa.py --solver v2 --auto medium --cheatsheet cheatsheet.txt
+uv run python src/run_gepa.py --solver v3 --auto heavy --use-cc  # uses Claude Code SDK for reflection
+
+# Baby run — smoke test the full pipeline (GEPA + eval) cheaply
+uv run python src/run_gepa.py --solver v1 --baby
+
+# Standalone evaluation of a solver on benchmark problems
+uv run python src/run_eval.py --solver-path optimized_solver.json --subset all_400
+uv run python src/run_eval.py --solver-path my_prompt.txt --subset normal_200 --dry-run
 
 # Export optimized solver to submission prompt
-python src/export.py --solver-path optimized_solver.json --solver-version v1 --output submission.txt
+uv run python src/export.py --solver-path optimized_solver.json --solver-version v1 --output submission.txt
+
+# Run tests
+uv run python -m pytest tests/ -v
 
 # Dashboard (Next.js, in dashboard/)
 cd dashboard && npm run dev
@@ -109,7 +119,10 @@ Note: benchmark reference solutions only cover 200 normal + 200 hard problems (n
 ### Baby run (for testing)
 
 ```bash
-# Basic — tests the full pipeline with 20 problems and 60 metric calls
+# Smoke test full pipeline: GEPA (20 problems, 60 metric calls) + dry-run eval (predicts FALSE)
+uv run python src/run_gepa.py --solver v1 --baby
+
+# Legacy baby run (GEPA only, no eval)
 uv run python baby_run.py
 
 # With a seed prompt — start optimization from a hand-crafted instruction
@@ -147,7 +160,7 @@ uv run python src/run_gepa.py --solver v1 --auto light \
 | `--solver` | `v1` | Solver architecture: `v1` (single step), `v2` (with cheatsheet), `v3` (two-step) |
 | `--auto` | `light` | Budget: `light` (6 candidates, ~1,724 calls), `medium` (12, ~2,410), `heavy` (18, ~3,210) |
 | `--max-metric-calls` | None | Override `--auto` with exact metric call budget |
-| `--minibatch-size` | `10` | Training examples per reflection minibatch |
+| `--minibatch-size` | `35` | Training examples per reflection minibatch (DSPy default is 3, GEPA auto_budget uses 35) |
 | `--student-model` | `vertex_ai/gemini-2.5-flash-lite` | Student LM. Use any litellm-compatible model string |
 | `--reflection-model` | `vertex_ai/gemini-3.1-pro-preview` | Reflection LM |
 | `--initial-prompt` | None | Text file with seed instruction (GEPA optimizes from here) |
@@ -155,6 +168,9 @@ uv run python src/run_gepa.py --solver v1 --auto light \
 | `--cheatsheet` | None | Text file for v2/v3 solvers |
 | `--seed` | `42` | RNG seed |
 | `--use-cc` | false | Use Claude Code SDK for reflection (slow — see `cc_adapter.py` warning) |
+| `--baby` | false | Smoke test: 20 problems, 60 metric calls, minibatch=3, auto-eval with dry-run |
+| `--auto-eval` | false | Run full evaluation on benchmark problems after GEPA completes |
+| `--eval-subset` | `all_400` | Problem subset for auto-eval: `normal_200`, `hard_200`, `all_400`, `all_1269` |
 
 ### Using your own models
 
@@ -190,6 +206,29 @@ All problems (normal + hard1 + hard2 = 1,269) are combined and split 80/20 into 
 - `optimized_solver.json` (project root) — latest run's best (overwritten each run)
 - `gepa_observations.db` — SQLite with all tracking data (LLM calls, metrics, iterations, candidates, Pareto)
 
+## Standalone Evaluation
+
+Evaluate an optimized solver (or raw prompt) on benchmark problem subsets and compare against the 25 benchmark models in the dashboard leaderboard.
+
+```bash
+# Evaluate optimized solver on all 400 benchmark problems (200 normal + 200 hard)
+uv run python src/run_eval.py --solver-path optimized_solver.json --subset all_400
+
+# Evaluate a raw prompt text file
+uv run python src/run_eval.py --solver-path my_prompt.txt --subset normal_200
+
+# Dry-run: predict FALSE for all problems (no LLM calls, for testing)
+uv run python src/run_eval.py --solver-path optimized_solver.json --subset all_400 --dry-run
+
+# Reuse GEPA val results to avoid re-evaluating those problems
+uv run python src/run_eval.py --solver-path optimized_solver.json --gepa-run-id abc123
+
+# Custom display name for leaderboard
+uv run python src/run_eval.py --solver-path optimized_solver.json --display-name "My best solver v2"
+```
+
+Results are stored in `gepa_observations.db` (tables: `eval_runs`, `eval_results`) and appear in the dashboard **Leaderboard** tab with an `OURS` badge, alongside the benchmark models. Data stays separate — benchmark data in `dashboard/data.db` is never modified.
+
 ## Exporting a Submission
 
 ```bash
@@ -216,17 +255,18 @@ Open http://localhost:3001
 
 ### Data sources
 
-1. **`gepa_observations.db`** (project root) — written by `observer.py` during GEPA runs
-   - Tables: `runs`, `llm_calls`, `gepa_metric_calls`, `gepa_iterations`, `gepa_candidates`, `gepa_candidate_scores`, `gepa_pareto`
-   - Feeds the **GEPA Experiments** tab
+1. **`gepa_observations.db`** (project root) — written by `observer.py` during GEPA runs and `run_eval.py` during evaluations
+   - GEPA tables: `runs`, `llm_calls`, `gepa_metric_calls`, `gepa_iterations`, `gepa_candidates`, `gepa_candidate_scores`, `gepa_pareto`
+   - Eval tables: `eval_runs`, `eval_results`
+   - Feeds the **GEPA Experiments** tab and **Leaderboard** (our eval runs)
 
-2. **`dashboard/data.db`** — pre-built from HuggingFace benchmark data
-   - Feeds the **Leaderboard**, **Model Breakdown**, **Problems**, and **Runs** tabs
+2. **`dashboard/data.db`** — pre-built from HuggingFace benchmark data (read-only, never modified)
+   - Feeds the **Leaderboard** (benchmark models), **Model Breakdown**, **Problems**, and **Runs** tabs
 
 ### Features
 
 - **GEPA Experiments** — live tracking of runs. Accuracy chart, metric evaluations (clickable dots with feedback), iteration timeline (proposed instructions, accept/reject/skip), candidate programs, Pareto frontier. Auto-refreshes every 3s while a run is active.
-- **Leaderboard** — benchmark model scores
+- **Leaderboard** — benchmark model scores + our eval runs (merged via `/api/leaderboard`, our runs shown with cyan `OURS` badge)
 - **Model Breakdown** — per-model analysis
 - **Problems** — problem explorer
 - **Runs** — individual benchmark runs with problem search and accuracy filtering

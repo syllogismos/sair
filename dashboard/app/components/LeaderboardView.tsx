@@ -50,6 +50,11 @@ function shortModelName(modelId: string, models: Model[]): string {
   return m?.display_name || modelId.split("/").pop() || modelId;
 }
 
+function isOurModel(modelId: string, models: Model[]): boolean {
+  const m = models.find((x) => x.model_id === modelId);
+  return m?.provider === "ours";
+}
+
 export default function LeaderboardView() {
   const [data, setData] = useState<LeaderboardEntry[]>([]);
   const [models, setModels] = useState<Model[]>([]);
@@ -57,15 +62,27 @@ export default function LeaderboardView() {
   const [sortBy, setSortBy] = useState<"accuracy" | "f1_score" | "avg_cost_usd">("accuracy");
 
   useEffect(() => {
-    Promise.all([
-      fetch("/data/leaderboard.json").then((r) => r.json()),
-      fetch("/data/models.json").then((r) => r.json()),
-    ]).then(([lb, md]) => {
-      setData(lb);
-      setModels(md);
-      const benchmarks = [...new Set(lb.map((x: LeaderboardEntry) => x.benchmark_id))];
-      if (benchmarks.length > 0) setSelectedBenchmark(benchmarks[0] as string);
-    });
+    // Try combined API (merges benchmark + our eval runs), fallback to static JSON
+    fetch("/api/leaderboard")
+      .then((r) => r.ok ? r.json() : Promise.reject("API failed"))
+      .then(({ leaderboard: lb, models: md }) => {
+        setData(lb);
+        setModels(md);
+        const benchmarks = [...new Set(lb.map((x: LeaderboardEntry) => x.benchmark_id))];
+        if (benchmarks.length > 0 && !selectedBenchmark) setSelectedBenchmark(benchmarks[0] as string);
+      })
+      .catch(() => {
+        // Fallback to static JSON
+        Promise.all([
+          fetch("/data/leaderboard.json").then((r) => r.json()),
+          fetch("/data/models.json").then((r) => r.json()),
+        ]).then(([lb, md]) => {
+          setData(lb);
+          setModels(md);
+          const benchmarks = [...new Set(lb.map((x: LeaderboardEntry) => x.benchmark_id))];
+          if (benchmarks.length > 0) setSelectedBenchmark(benchmarks[0] as string);
+        });
+      });
   }, []);
 
   const benchmarks = useMemo(
@@ -90,6 +107,7 @@ export default function LeaderboardView() {
         f1: +(x.f1_score * 100).toFixed(1),
         cost: +x.avg_cost_usd.toFixed(4),
         consistency: +(x.repeat_consistency * 100).toFixed(1),
+        isOurs: isOurModel(x.model_id, models),
       })),
     [filtered, models]
   );
@@ -164,13 +182,15 @@ export default function LeaderboardView() {
                 <Cell
                   key={index}
                   fill={
-                    entry.accuracy >= 70
-                      ? "#22c55e"
-                      : entry.accuracy >= 55
-                        ? "#f59e0b"
-                        : "#ef4444"
+                    entry.isOurs
+                      ? "#06b6d4"
+                      : entry.accuracy >= 70
+                        ? "#22c55e"
+                        : entry.accuracy >= 55
+                          ? "#f59e0b"
+                          : "#ef4444"
                   }
-                  fillOpacity={0.8}
+                  fillOpacity={entry.isOurs ? 1.0 : 0.8}
                 />
               ))}
             </Bar>
@@ -199,13 +219,18 @@ export default function LeaderboardView() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((row, i) => (
+              {filtered.map((row, i) => {
+                const ours = isOurModel(row.model_id, models);
+                return (
                 <tr
                   key={row.model_id}
-                  className="border-b border-[#1e1e24]/50 hover:bg-white/[0.01] transition-colors"
+                  className={`border-b border-[#1e1e24]/50 hover:bg-white/[0.01] transition-colors ${
+                    ours ? "bg-cyan-500/[0.06] border-l-2 border-l-cyan-500" : ""
+                  }`}
                 >
                   <td className="px-4 py-2.5 text-zinc-500">{i + 1}</td>
                   <td className="px-4 py-2.5 font-medium">
+                    {ours && <span className="text-[9px] font-bold tracking-wider text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded mr-2">OURS</span>}
                     {shortModelName(row.model_id, models)}
                   </td>
                   <td className="px-4 py-2.5 text-right font-mono">
@@ -241,7 +266,8 @@ export default function LeaderboardView() {
                     {row.avg_time_secs.toFixed(1)}s
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

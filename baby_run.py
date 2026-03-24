@@ -68,36 +68,37 @@ if args.resume:
     )
     print(f"Resuming run: {args.resume}")
 
-observer.store_dataset_sizes(len(train), len(val))
-observer.install_gepa_hooks()
-tracked_metric = observer.wrap_metric(metric)
-dspy.configure(lm=student_lm, callbacks=[observer], num_threads=4)
-
-solver = SolverV1()
-if args.initial_prompt:
-    prompt_text = Path(args.initial_prompt).read_text()
-    for name, pred in solver.named_predictors():
-        pred.signature = pred.signature.with_instructions(prompt_text)
-    print(f"Initial prompt: {len(prompt_text)} bytes from {args.initial_prompt}")
-observer.store_seed_instruction(solver)
-
-optimizer = dspy.GEPA(
-    metric=tracked_metric,
-    reflection_lm=reflection_lm,
-    reflection_minibatch_size=10,
-    max_metric_calls=60,
-    track_stats=True,
-    log_dir=f"gepa_logs/{args.resume or observer.run_id}",
-    seed=42,
-    failure_score=0.0,
-)
-
-print("\nStarting baby GEPA run...")
-print(f"Student: vertex_ai/gemini-2.5-flash-lite")
-print(f"Reflection: vertex_ai/gemini-3.1-pro-preview")
-print(f"Minibatch: 10, Budget: 60 metric calls")
-print()
 try:
+    observer.store_dataset_sizes(len(train), len(val))
+    observer.install_gepa_hooks()
+    tracked_metric = observer.wrap_metric(metric)
+    dspy.configure(lm=student_lm, callbacks=[observer], num_threads=4)
+
+    solver = SolverV1()
+    if args.initial_prompt:
+        prompt_text = Path(args.initial_prompt).read_text()
+        for name, pred in solver.named_predictors():
+            pred.signature = pred.signature.with_instructions(prompt_text)
+        print(f"Initial prompt: {len(prompt_text)} bytes from {args.initial_prompt}")
+    observer.store_seed_instruction(solver)
+
+    optimizer = dspy.GEPA(
+        metric=tracked_metric,
+        reflection_lm=reflection_lm,
+        reflection_minibatch_size=10,
+        max_metric_calls=60,
+        track_stats=True,
+        log_dir=f"gepa_logs/{args.resume or observer.run_id}",
+        seed=42,
+        failure_score=0.0,
+    )
+
+    print("\nStarting baby GEPA run...")
+    print(f"Student: vertex_ai/gemini-2.5-flash-lite")
+    print(f"Reflection: vertex_ai/gemini-3.1-pro-preview")
+    print(f"Minibatch: 10, Budget: 60 metric calls")
+    print()
+
     with dspy.track_usage() as usage:
         optimized = optimizer.compile(solver, trainset=train, valset=val)
     observer.dump_gepa_results(optimized)

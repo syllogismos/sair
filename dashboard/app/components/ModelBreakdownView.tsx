@@ -43,6 +43,7 @@ export default function ModelBreakdownView() {
   const [data, setData] = useState<BreakdownEntry[]>([]);
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>("");
+  const [scatterBenchmark, setScatterBenchmark] = useState<string>("hard_200_common_25_default_reason");
 
   useEffect(() => {
     Promise.all([
@@ -66,18 +67,30 @@ export default function ModelBreakdownView() {
   const displayName = (id: string) =>
     models.find((m) => m.model_id === id)?.display_name || id.split("/").pop() || id;
 
-  // TRUE vs FALSE accuracy scatter for all models on one benchmark
+  const benchmarkIds = useMemo(() => [...new Set(data.map((x) => x.benchmark_id))], [data]);
+
+  // TRUE vs FALSE accuracy scatter for all models on selected benchmark
   const scatterData = useMemo(() => {
-    const bm = "hard_200_common_25_default_reason";
     return data
-      .filter((x) => x.benchmark_id === bm)
+      .filter((x) => x.benchmark_id === scatterBenchmark)
       .map((x) => ({
         name: displayName(x.model_id),
         trueAcc: +(x.true_accuracy * 100).toFixed(1),
         falseAcc: +(x.false_accuracy * 100).toFixed(1),
         total: x.total,
       }));
-  }, [data, models]);
+  }, [data, models, scatterBenchmark]);
+
+  const scatterDomain = useMemo(() => {
+    if (scatterData.length === 0) return { x: [0, 100] as [number, number], y: [0, 100] as [number, number] };
+    const allTrue = scatterData.map((d) => d.trueAcc);
+    const allFalse = scatterData.map((d) => d.falseAcc);
+    const pad = 8;
+    return {
+      x: [Math.max(0, Math.floor(Math.min(...allTrue) - pad)), Math.min(105, Math.ceil(Math.max(...allTrue) + pad))] as [number, number],
+      y: [Math.max(0, Math.floor(Math.min(...allFalse) - pad)), 105] as [number, number],
+    };
+  }, [scatterData]);
 
   if (data.length === 0)
     return <div className="text-zinc-500 py-12 text-center">Loading...</div>;
@@ -86,21 +99,35 @@ export default function ModelBreakdownView() {
     <div className="space-y-6">
       {/* TRUE vs FALSE Accuracy Scatter */}
       <div className="replay-panel p-6">
-        <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500 mb-1">
-          TRUE vs FALSE Accuracy — Hard / Default Reasoning
-        </h3>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-zinc-500">
+            TRUE vs FALSE Accuracy — {BM_SHORT[scatterBenchmark] || scatterBenchmark}
+          </h3>
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] text-zinc-600 uppercase tracking-wider">Benchmark:</label>
+            <select
+              value={scatterBenchmark}
+              onChange={(e) => setScatterBenchmark(e.target.value)}
+              className="bg-[#0c0c0f] border border-[#1e1e24] rounded-lg px-2.5 py-1 text-xs text-zinc-300 focus:outline-none focus:border-sky-800"
+            >
+              {benchmarkIds.map((bm) => (
+                <option key={bm} value={bm}>{BM_SHORT[bm] || bm}</option>
+              ))}
+            </select>
+          </div>
+        </div>
         <p className="text-xs text-[#71717a] mb-4">
           Models above the diagonal are better at TRUE; below are better at FALSE.
           The key insight: most models are biased toward one direction.
         </p>
-        <ResponsiveContainer width="100%" height={400}>
-          <ScatterChart margin={{ left: 20, bottom: 20 }}>
+        <ResponsiveContainer width="100%" height={500}>
+          <ScatterChart margin={{ left: 20, bottom: 20, top: 30 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#1e1e24" />
             <XAxis
               type="number"
               dataKey="trueAcc"
               name="TRUE Accuracy"
-              domain={[0, 100]}
+              domain={scatterDomain.x}
               tick={{ fill: "#52525b", fontSize: 12 }}
               label={{ value: "TRUE Accuracy %", position: "bottom", fill: "#52525b", fontSize: 12 }}
             />
@@ -108,7 +135,7 @@ export default function ModelBreakdownView() {
               type="number"
               dataKey="falseAcc"
               name="FALSE Accuracy"
-              domain={[0, 100]}
+              domain={scatterDomain.y}
               tick={{ fill: "#52525b", fontSize: 12 }}
               label={{
                 value: "FALSE Accuracy %",
@@ -120,6 +147,7 @@ export default function ModelBreakdownView() {
             />
             <ZAxis range={[60, 60]} />
             <Tooltip
+              isAnimationActive={false}
               contentStyle={{
                 background: "#141417",
                 border: "1px solid #1e1e24",
@@ -128,21 +156,33 @@ export default function ModelBreakdownView() {
                 fontSize: 13,
               }}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              formatter={(value: any, name: any) => [`${value}%`, name]}
+              content={({ payload }: any) => {
+                if (!payload || payload.length === 0) return null;
+                const d = payload[0]?.payload;
+                if (!d) return null;
+                return (
+                  <div style={{ background: "#141417", border: "1px solid #1e1e24", borderRadius: 8, padding: "8px 12px", fontSize: 12 }}>
+                    <div style={{ color: "#e4e4e7", fontWeight: 600, marginBottom: 4 }}>{d.name}</div>
+                    <div style={{ color: "#22c55e" }}>TRUE: {d.trueAcc}%</div>
+                    <div style={{ color: "#ef4444" }}>FALSE: {d.falseAcc}%</div>
+                  </div>
+                );
+              }}
             />
             <Scatter
               data={scatterData}
               fill="#0ea5e9"
               fillOpacity={0.8}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              label={({ x, y, value, index }: any) => (
+              label={({ x, y, index }: any) => (
                 <text
                   key={index}
                   x={x + 8}
-                  y={y - 6}
-                  fill="#52525b"
+                  y={y + 14}
+                  fill="#71717a"
                   fontSize={9}
                   textAnchor="start"
+                  style={{ pointerEvents: "none" }}
                 >
                   {scatterData[index]?.name}
                 </text>

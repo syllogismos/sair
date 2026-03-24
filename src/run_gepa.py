@@ -69,7 +69,7 @@ def main():
     parser.add_argument("--solver", default="v1", choices=["v1", "v2", "v3"])
     parser.add_argument("--auto", default="light", choices=["light", "medium", "heavy"])
     parser.add_argument("--max-metric-calls", type=int, default=None, help="Override auto budget with exact metric call limit")
-    parser.add_argument("--minibatch-size", type=int, default=10, help="Number of training examples per reflection minibatch")
+    parser.add_argument("--minibatch-size", type=int, default=35, help="Number of training examples per reflection minibatch")
     parser.add_argument("--cheatsheet", default=None, help="Path to cheatsheet text file")
     parser.add_argument("--student-model", default="vertex_ai/gemini-2.5-flash-lite")
     parser.add_argument("--reflection-model", default="vertex_ai/gemini-3.1-pro-preview")
@@ -79,7 +79,19 @@ def main():
     parser.add_argument("--resume", default=None, help="Run ID to resume (reuses its log_dir for GEPA checkpoint)")
     parser.add_argument("--initial-prompt", default=None, help="Path to text file with initial instruction for the solver")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--auto-eval", action="store_true", help="Run full evaluation on benchmark problems after GEPA completes")
+    parser.add_argument("--eval-subset", default="all_400", choices=["normal_200", "hard_200", "all_400", "all_1269"],
+                        help="Problem subset for auto-eval (default: all_400)")
+    parser.add_argument("--baby", action="store_true",
+                        help="Smoke test: 20 problems, 60 metric calls, minibatch=10, auto-eval with --dry-run")
     args = parser.parse_args()
+
+    # Baby mode overrides
+    if args.baby:
+        args.max_metric_calls = args.max_metric_calls or 60
+        args.minibatch_size = min(args.minibatch_size, 3)
+        args.auto_eval = True
+        print("=== BABY MODE: small data, small budget, dry-run eval ===\n")
 
     # Setup
     setup_vertex_ai()
@@ -92,7 +104,12 @@ def main():
     all_problems = normal + hard1 + hard2
     print(f"  Total: {len(all_problems)} problems ({len(normal)} normal, {len(hard1)} hard1, {len(hard2)} hard2)")
 
-    train, val = train_val_split(all_problems, val_ratio=0.2, seed=args.seed)
+    if args.baby:
+        # Use a small slice: first 10 + last 10
+        all_problems = normal[:10] + normal[-10:]
+        print(f"  Baby mode: using {len(all_problems)} problems")
+
+    train, val = train_val_split(all_problems, val_ratio=0.2 if not args.baby else 0.3, seed=args.seed)
     print(f"  Train: {len(train)}, Val: {len(val)}")
 
     # Load reference solutions from benchmark traces
@@ -138,53 +155,54 @@ def main():
         print(f"Run ID: {observer.run_id} ({run_name})")
 
     dspy.configure(lm=student_lm, callbacks=[observer], num_threads=4)
-    observer.store_dataset_sizes(len(train), len(val))
-
-    # Install real-time GEPA iteration tracking (must be before compile)
-    observer.install_gepa_hooks()
-
-    # Wrap metric for real-time GEPA evaluation tracking
-    tracked_metric = observer.wrap_metric(metric)
-
-    # Load cheatsheet if provided
-    cheatsheet = ""
-    if args.cheatsheet:
-        cheatsheet = Path(args.cheatsheet).read_text()
-        print(f"Cheatsheet: {len(cheatsheet)} bytes from {args.cheatsheet}")
-
-    # Create solver
-    solver = make_solver(args.solver, cheatsheet=cheatsheet)
-    if args.initial_prompt:
-        prompt_text = Path(args.initial_prompt).read_text()
-        for name, pred in solver.named_predictors():
-            pred.signature = pred.signature.with_instructions(prompt_text)
-        print(f"Initial prompt: {len(prompt_text)} bytes from {args.initial_prompt}")
-    print(f"Solver: {args.solver}")
-    observer.store_seed_instruction(solver)
-
-    # Run GEPA
-    print(f"\nStarting GEPA optimization (auto={args.auto})...")
-    print(f"Log dir: {args.log_dir}")
-    print(f"Observations DB: {args.db_path}")
-    print()
-
-    gepa_kwargs = dict(
-        metric=tracked_metric,
-        reflection_lm=reflection_lm,
-        reflection_minibatch_size=args.minibatch_size,
-        track_stats=True,
-        log_dir=str(Path(args.log_dir) / (args.resume or observer.run_id)),
-        seed=args.seed,
-        failure_score=0.0,
-    )
-    if args.max_metric_calls:
-        gepa_kwargs["max_metric_calls"] = args.max_metric_calls
-    else:
-        gepa_kwargs["auto"] = args.auto
-
-    optimizer = dspy.GEPA(**gepa_kwargs)
 
     try:
+        observer.store_dataset_sizes(len(train), len(val))
+
+        # Install real-time GEPA iteration tracking (must be before compile)
+        observer.install_gepa_hooks()
+
+        # Wrap metric for real-time GEPA evaluation tracking
+        tracked_metric = observer.wrap_metric(metric)
+
+        # Load cheatsheet if provided
+        cheatsheet = ""
+        if args.cheatsheet:
+            cheatsheet = Path(args.cheatsheet).read_text()
+            print(f"Cheatsheet: {len(cheatsheet)} bytes from {args.cheatsheet}")
+
+        # Create solver
+        solver = make_solver(args.solver, cheatsheet=cheatsheet)
+        if args.initial_prompt:
+            prompt_text = Path(args.initial_prompt).read_text()
+            for name, pred in solver.named_predictors():
+                pred.signature = pred.signature.with_instructions(prompt_text)
+            print(f"Initial prompt: {len(prompt_text)} bytes from {args.initial_prompt}")
+        print(f"Solver: {args.solver}")
+        observer.store_seed_instruction(solver)
+
+        # Run GEPA
+        print(f"\nStarting GEPA optimization (auto={args.auto})...")
+        print(f"Log dir: {args.log_dir}")
+        print(f"Observations DB: {args.db_path}")
+        print()
+
+        gepa_kwargs = dict(
+            metric=tracked_metric,
+            reflection_lm=reflection_lm,
+            reflection_minibatch_size=args.minibatch_size,
+            track_stats=True,
+            log_dir=str(Path(args.log_dir) / (args.resume or observer.run_id)),
+            seed=args.seed,
+            failure_score=0.0,
+        )
+        if args.max_metric_calls:
+            gepa_kwargs["max_metric_calls"] = args.max_metric_calls
+        else:
+            gepa_kwargs["auto"] = args.auto
+
+        optimizer = dspy.GEPA(**gepa_kwargs)
+
         with dspy.track_usage() as usage:
             optimized = optimizer.compile(solver, trainset=train, valset=val)
         observer.dump_gepa_results(optimized)
@@ -231,6 +249,27 @@ def main():
         print(f"Best score: {dr.val_aggregate_scores[dr.best_idx]:.4f}")
         print(f"Total candidates explored: {len(dr.candidates)}")
         print(f"Total metric calls: {dr.total_metric_calls}")
+
+    # Auto-eval: run full evaluation on benchmark problems
+    if args.auto_eval:
+        print("\n=== Running post-GEPA evaluation ===")
+        from run_eval import run_evaluation
+
+        cheatsheet_text = ""
+        if args.cheatsheet:
+            cheatsheet_text = Path(args.cheatsheet).read_text()
+
+        run_evaluation(
+            solver_path=str(run_output),
+            solver_version=args.solver,
+            student_model=args.student_model,
+            subset=args.eval_subset,
+            gepa_run_id=args.resume or observer.run_id,
+            cheatsheet=cheatsheet_text or None,
+            db_path=os.path.relpath(args.db_path, PROJECT_ROOT) if os.path.isabs(args.db_path) else args.db_path,
+            seed=args.seed,
+            dry_run=args.baby,
+        )
 
 
 if __name__ == "__main__":

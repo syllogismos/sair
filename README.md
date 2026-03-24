@@ -140,7 +140,7 @@ The text file should contain just the instruction text — no Jinja placeholders
 | `--solver` | `v1` | `v1` (single step), `v2` (with cheatsheet), `v3` (two-step) |
 | `--auto` | `light` | Budget preset: `light`, `medium`, `heavy` |
 | `--max-metric-calls` | — | Override auto budget with exact number |
-| `--minibatch-size` | `10` | Training examples per reflection step |
+| `--minibatch-size` | `35` | Training examples per reflection step |
 | `--student-model` | `vertex_ai/gemini-2.5-flash-lite` | Student model |
 | `--reflection-model` | `vertex_ai/gemini-3.1-pro-preview` | Reflection model |
 | `--initial-prompt` | — | Path to seed instruction text file |
@@ -150,12 +150,36 @@ The text file should contain just the instruction text — no Jinja placeholders
 
 ### Baby Run (Testing)
 
-Test the full pipeline with 20 problems and a tiny budget:
+Test the full pipeline end-to-end (GEPA + evaluation) with minimal cost:
 
 ```bash
+# Full pipeline smoke test: GEPA (20 problems, 60 metric calls) + dry-run eval
+uv run python src/run_gepa.py --solver v1 --baby
+
+# Legacy baby run (GEPA only)
 uv run python baby_run.py
 uv run python baby_run.py --initial-prompt my_prompt.txt
 ```
+
+## Standalone Evaluation
+
+Evaluate a solver on benchmark problem subsets and compare against the 25 benchmark models:
+
+```bash
+# Evaluate on all 400 benchmark problems (200 normal + 200 hard)
+uv run python src/run_eval.py --solver-path optimized_solver.json --subset all_400
+
+# Evaluate a raw prompt file
+uv run python src/run_eval.py --solver-path my_prompt.txt --subset normal_200
+
+# Dry-run (predict FALSE, no LLM calls — for testing)
+uv run python src/run_eval.py --solver-path optimized_solver.json --dry-run
+
+# Reuse GEPA validation results (saves money)
+uv run python src/run_eval.py --solver-path optimized_solver.json --gepa-run-id abc123
+```
+
+Results appear in the dashboard Leaderboard tab with an `OURS` badge alongside benchmark models. Our data is stored in `gepa_observations.db` — benchmark data in `dashboard/data.db` is never modified.
 
 ## Exporting a Submission
 
@@ -198,15 +222,15 @@ Open http://localhost:3001
 - Auto-refreshes every 3 seconds while a run is active
 
 **Other tabs:**
-- Leaderboard — benchmark model scores
+- Leaderboard — benchmark model scores + our eval runs (merged at read time, our runs shown with cyan `OURS` badge)
 - Model Breakdown — per-model analysis
 - Problems — problem explorer
 - Runs — individual benchmark runs with search/filtering
 
 ### Data sources
 
-- `gepa_observations.db` (project root) — written during GEPA runs, feeds the GEPA Experiments tab
-- `dashboard/data.db` — pre-built from HuggingFace benchmark, feeds Leaderboard/Runs/Problems tabs
+- `gepa_observations.db` (project root) — written during GEPA runs and evaluations, feeds GEPA Experiments tab and Leaderboard (our eval runs)
+- `dashboard/data.db` — pre-built from HuggingFace benchmark (read-only), feeds Leaderboard (benchmark models), Runs, Problems tabs
 
 ## Project Structure
 
@@ -215,12 +239,15 @@ baby_run.py          — small test run (20 problems, same models as full run)
 baby_run_claude.py   — test run using Claude Code SDK
 src/
   run_gepa.py        — main GEPA optimization script
+  run_eval.py        — standalone evaluation on benchmark problems
   solver.py          — DSPy solver modules (V1, V2, V3)
   metric.py          — scoring with reference solution feedback
   data.py            — data loading and train/val split
-  observer.py        — SQLite logging for LLM calls + GEPA events
+  observer.py        — SQLite logging for LLM calls, GEPA events, and eval results
   cc_adapter.py      — Claude Code SDK adapter (slow, see warning)
   export.py          — export optimized prompt to submission template
+tests/
+  test_run_eval.py   — tests for evaluation pipeline (dry-run, no API calls)
 data/
   problems_*.jsonl   — competition problems
   benchmark_*        — benchmark model runs (download from HuggingFace)
