@@ -11,3 +11,6 @@ dashboard/.next/
 autoresearch/
 gepa_logs/
 .next/
+# Large data files (download from HuggingFace)
+data/benchmark_runs.jsonl
+data/benchmark_runs.csv
