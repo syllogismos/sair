@@ -207,7 +207,7 @@ function EvalDetail({ evalId, onBack }: { evalId: string; onBack: () => void }) 
           <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
             {[
               { label: "Accuracy", value: `${(accuracy * 100).toFixed(1)}%` },
-              { label: "F1", value: `${(f1 * 100).toFixed(1)}%` },
+              { label: "F1", value: f1.toFixed(3) },
               { label: "TP", value: String(tp) },
               { label: "FP", value: String(fp) },
               { label: "FN", value: String(fn) },
@@ -423,7 +423,7 @@ export default function EvalExplorer({
                     ) : "-"}
                   </td>
                   <td className="px-4 py-2.5 text-right font-mono">
-                    {e.f1_score != null ? `${(e.f1_score * 100).toFixed(1)}%` : "-"}
+                    {e.f1_score != null ? e.f1_score.toFixed(3) : "-"}
                   </td>
                   <td className="px-4 py-2.5 text-right font-mono text-zinc-400">{e.problem_count}</td>
                   <td className="px-4 py-2.5 text-right font-mono text-zinc-500">

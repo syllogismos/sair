@@ -126,7 +126,7 @@ export default function LeaderboardView() {
           name,
           fullName,
           accuracy: +(x.accuracy * 100).toFixed(1),
-          f1: +(x.f1_score * 100).toFixed(1),
+          f1: +x.f1_score.toFixed(3),
           cost: +x.avg_cost_usd.toFixed(4),
           consistency: +(x.repeat_consistency * 100).toFixed(1),
           isOurs: isOurModel(x.model_id, models),
@@ -175,8 +175,9 @@ export default function LeaderboardView() {
       {(() => {
         const chartKey = sortBy === "f1_score" ? "f1" : sortBy === "avg_cost_usd" ? "cost" : "accuracy";
         const chartLabel = sortBy === "f1_score" ? "F1 Score" : sortBy === "avg_cost_usd" ? "Cost (USD)" : "Accuracy";
-        const isPercent = chartKey !== "cost";
-        const domain: [number, number] = isPercent ? [0, 100] : [0, Math.max(...chartData.map((d) => d.cost), 0.01)];
+        const isPercent = chartKey === "accuracy";
+        const isF1 = chartKey === "f1";
+        const domain: [number, number] = isPercent ? [0, 100] : isF1 ? [0, 1] : [0, Math.max(...chartData.map((d) => d.cost), 0.01)];
 
         function barColor(entry: typeof chartData[number]) {
           if (entry.isOurs) return "#06b6d4";
@@ -210,7 +211,7 @@ export default function LeaderboardView() {
                     return (
                       <div style={{ background: "#0c0c0f", border: "1px solid #1e1e24", borderRadius: 8, padding: "8px 12px", fontSize: 13 }}>
                         <div style={{ color: "#e4e4e7", fontWeight: 600, marginBottom: 4 }}>{fullName}</div>
-                        <div style={{ color: "#38bdf8" }}>{chartLabel}: {isPercent ? `${val}%` : `$${val}`}</div>
+                        <div style={{ color: "#38bdf8" }}>{chartLabel}: {isPercent ? `${val}%` : isF1 ? val : `$${val}`}</div>
                       </div>
                     );
                   }}
@@ -279,7 +280,7 @@ export default function LeaderboardView() {
                     </span>
                   </td>
                   <td className="px-2 sm:px-4 py-2.5 text-right font-mono">
-                    {(row.f1_score * 100).toFixed(1)}%
+                    {row.f1_score.toFixed(3)}
                   </td>
                   <td className="px-2 sm:px-4 py-2.5 text-right font-mono text-[#22c55e] hidden sm:table-cell">{row.tp}</td>
                   <td className="px-2 sm:px-4 py-2.5 text-right font-mono text-[#ef4444] hidden sm:table-cell">{row.fp}</td>
