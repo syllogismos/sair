@@ -259,12 +259,15 @@ def main():
         if args.cheatsheet:
             cheatsheet_text = Path(args.cheatsheet).read_text()
 
+        gepa_id = args.resume or observer.run_id
+        model_short = args.student_model.split("/")[-1]
         run_evaluation(
             solver_path=str(run_output),
             solver_version=args.solver,
             student_model=args.student_model,
             subset=args.eval_subset,
-            gepa_run_id=args.resume or observer.run_id,
+            gepa_run_id=None,  # no cache reuse; pass --gepa-run-id explicitly to reuse val results
+            display_name=f"{model_short} / {args.solver} (gepa:{gepa_id[:8]})",
             cheatsheet=cheatsheet_text or None,
             db_path=os.path.relpath(args.db_path, PROJECT_ROOT) if os.path.isabs(args.db_path) else args.db_path,
             seed=args.seed,

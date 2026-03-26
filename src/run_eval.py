@@ -252,7 +252,7 @@ def run_evaluation(
     # Setup LM (skip in dry-run mode)
     student_lm = None
     if not dry_run:
-        student_lm = dspy.LM(model=student_model, temperature=0.0, max_tokens=12000, num_retries=8)
+        student_lm = dspy.LM(model=student_model, temperature=0.0, max_tokens=20000, num_retries=8)
         dspy.configure(lm=student_lm, num_threads=num_threads)
 
     # Load GEPA val results to reuse (if provided)

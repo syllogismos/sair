@@ -352,7 +352,9 @@ class GEPAObserver(BaseCallback):
         # Per-instance scores (sparse — only non-zero)
         score_rows = []
         for cand_idx, subscores in enumerate(dr.val_subscores):
-            for val_idx, score in enumerate(subscores):
+            # val_subscores is a list of dicts: {val_idx: score}
+            items = subscores.items() if isinstance(subscores, dict) else enumerate(subscores)
+            for val_idx, score in items:
                 if score != 0.0:
                     score_rows.append((self.run_id, cand_idx, val_idx, score))
         if score_rows:
@@ -422,7 +424,13 @@ class GEPAObserver(BaseCallback):
         # Extract token usage from LM history or estimate from text
         prompt_tokens = 0
         completion_tokens = 0
-        if instance and hasattr(instance, "history") and instance.history:
+        if exception:
+            # Failed call — don't read history (it has the previous call's data)
+            # Estimate prompt tokens from the captured prompt text
+            prompt_full = start.get("prompt_full", "")
+            if prompt_full:
+                prompt_tokens = max(1, len(prompt_full) // 4)
+        elif instance and hasattr(instance, "history") and instance.history:
             last = instance.history[-1]
             resp = last.get("response")
             # Try API-reported usage first
