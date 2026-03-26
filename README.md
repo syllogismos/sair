@@ -4,250 +4,12 @@ Automated prompt optimization for the [SAIR Mathematics Distillation Challenge: 
 
 **Goal:** Craft a prompt (max 10KB) that helps lower-cost LLMs determine whether one equational law implies another over all magmas. The prompt is optimized using [DSPy's GEPA optimizer](https://arxiv.org/abs/2507.19457), which iteratively evolves instructions through reflection.
 
-## Quick Start
-
-```bash
-# 1. Clone
-git clone https://github.com/syllogismos/sair.git
-cd sair
-
-# 2. Setup Python environment
-uv sync  # or: uv pip install -r requirements.txt
-
-# 3. Download data from HuggingFace
-.venv/bin/hf download SAIRfoundation/equational-theories-selected-problems --local-dir data/
-.venv/bin/hf download SAIRfoundation/equational-theories-benchmark --local-dir data/
-
-# 4. Set your API key (pick your provider)
-export ANTHROPIC_API_KEY=sk-...       # for Anthropic models
-# or
-export OPENAI_API_KEY=sk-...          # for OpenAI models
-# or
-export TOGETHER_API_KEY=...           # for Together AI (Llama, etc.)
-# or set up Vertex AI credentials for Google models
-
-# 5. Run optimization
-uv run python src/run_gepa.py --solver v1 --auto light \
-  --student-model openai/gpt-4o-mini \
-  --reflection-model openai/gpt-4o
-
-# 6. Export submission
-uv run python src/export.py --solver-path optimized_solver.json --solver-version v1 --output submission.txt
-```
-
-## The Competition
-
-Given two equations over magmas (e.g. `x = x * (y * z)` and `x * y = y * x`), determine: **does Equation 1 imply Equation 2?** (TRUE/FALSE).
-
-- Equations use `*` as a binary operation and variables `x, y, z, w, u, v`
-- `*` is an arbitrary operation — no commutativity, associativity, or other properties assumed
-- Evaluation is on a hidden test set using lower-cost models (Llama, Gemini Flash, etc.)
-- Submission is a Jinja2 template with `{{ equation1 }}` and `{{ equation2 }}` placeholders (max 10KB)
-
-## Data Setup
-
-Download from HuggingFace and place in `data/`:
-
-```bash
-# Required — the problems to train on
-.venv/bin/hf download SAIRfoundation/equational-theories-selected-problems --local-dir data/
-
-# Recommended — benchmark model runs, used for reference solutions in metric feedback
-.venv/bin/hf download SAIRfoundation/equational-theories-benchmark --local-dir data/
-```
-
-**What you get:**
-
-| File | Size | Description |
-|------|------|-------------|
-| `problems_normal.jsonl` | ~200KB | 1,000 problems (500 TRUE, 500 FALSE) |
-| `problems_hard1.jsonl` | ~15KB | 69 hard problems |
-| `problems_hard2.jsonl` | ~40KB | 200 hard problems |
-| `benchmark_runs.jsonl` | ~265MB | 60,000 model runs — correct solutions used as feedback |
-| `equations.txt` | ~100KB | All 4,694 equational laws |
-
-Each problem is a JSONL line:
-```json
-{"id": "normal_0001", "equation1": "x = ...", "equation2": "x * y = ...", "answer": true}
-```
-
-## Running GEPA Optimization
-
-GEPA (Guided Evolutionary Prompt Adaptation) iteratively improves your prompt:
-1. Evaluates the current prompt on a validation set
-2. Samples a minibatch, identifies failures
-3. Sends failures to a reflection LM which proposes an improved prompt
-4. Accepts the new prompt if it improves on the minibatch, then runs full evaluation
-5. Tracks a Pareto frontier — different prompts can be best on different problems
-
-### Choose Your Models
-
-You need two models:
-- **Student** — the cheap/fast model that runs on every problem (hundreds of calls)
-- **Reflection** — the smart model that proposes better instructions (few calls)
-
-```bash
-# OpenAI
-uv run python src/run_gepa.py --solver v1 --auto light \
-  --student-model openai/gpt-4o-mini \
-  --reflection-model openai/gpt-4o
-
-# Anthropic
-uv run python src/run_gepa.py --solver v1 --auto light \
-  --student-model anthropic/claude-haiku-4-5-20251001 \
-  --reflection-model anthropic/claude-sonnet-4-6
-
-# Together AI (Llama)
-uv run python src/run_gepa.py --solver v1 --auto light \
-  --student-model together_ai/meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo \
-  --reflection-model together_ai/meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo
-
-# Google Vertex AI
-uv run python src/run_gepa.py --solver v1 --auto light \
-  --student-model vertex_ai/gemini-2.5-flash-lite \
-  --reflection-model vertex_ai/gemini-3.1-pro-preview
-```
-
-Any [litellm-compatible model string](https://docs.litellm.ai/docs/providers) works. Set the corresponding `*_API_KEY` env variable.
-
-### Budget Presets
-
-| Preset | Candidates | Iterations | Metric Calls | Est. Time |
-|--------|-----------|------------|-------------|-----------|
-| `--auto light` | 6 | ~10 | ~1,724 | 1-3 hours |
-| `--auto medium` | 12 | ~18 | ~2,410 | 2-5 hours |
-| `--auto heavy` | 18 | ~27 | ~3,210 | 3-8 hours |
-
-Or set an exact budget: `--max-metric-calls 500`
-
-### Start from a Seed Prompt
-
-Instead of starting from a blank instruction, provide a hand-crafted starting point:
-
-```bash
-uv run python src/run_gepa.py --solver v1 --auto light \
-  --initial-prompt my_prompt.txt \
-  --student-model openai/gpt-4o-mini \
-  --reflection-model openai/gpt-4o
-```
-
-The text file should contain just the instruction text — no Jinja placeholders or output format. GEPA optimizes from there.
-
-### All Flags
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--solver` | `v1` | `v1` (single step), `v2` (with cheatsheet), `v3` (two-step) |
-| `--auto` | `light` | Budget preset: `light`, `medium`, `heavy` |
-| `--max-metric-calls` | — | Override auto budget with exact number |
-| `--minibatch-size` | `35` | Training examples per reflection step |
-| `--student-model` | `vertex_ai/gemini-2.5-flash-lite` | Student model |
-| `--reflection-model` | `vertex_ai/gemini-3.1-pro-preview` | Reflection model |
-| `--initial-prompt` | — | Path to seed instruction text file |
-| `--resume` | — | Run ID to resume a previous run |
-| `--cheatsheet` | — | Path to cheatsheet file (for v2/v3) |
-| `--seed` | `42` | RNG seed |
-
-### Baby Run (Testing)
-
-Test the full pipeline end-to-end (GEPA + evaluation) with minimal cost:
-
-```bash
-# Full pipeline smoke test: GEPA (20 problems, 60 metric calls) + dry-run eval
-uv run python src/run_gepa.py --solver v1 --baby
-
-# Legacy baby run (GEPA only)
-uv run python baby_run.py
-uv run python baby_run.py --initial-prompt my_prompt.txt
-```
-
-## Standalone Evaluation
-
-Evaluate a solver on benchmark problem subsets and compare against the 25 benchmark models:
-
-```bash
-# Evaluate on all 400 benchmark problems (200 normal + 200 hard)
-uv run python src/run_eval.py --solver-path optimized_solver.json --subset all_400
-
-# Evaluate a raw prompt file
-uv run python src/run_eval.py --solver-path my_prompt.txt --subset normal_200
-
-# Dry-run (predict FALSE, no LLM calls — for testing)
-uv run python src/run_eval.py --solver-path optimized_solver.json --dry-run
-
-# Reuse GEPA validation results (saves money)
-uv run python src/run_eval.py --solver-path optimized_solver.json --gepa-run-id abc123
-```
-
-Results appear in the dashboard Leaderboard tab with an `OURS` badge alongside benchmark models. Our data is stored in `gepa_observations.db` — benchmark data in `dashboard/data.db` is never modified.
-
-## Exporting a Submission
-
-After a run completes:
-
-```bash
-# From a specific run
-uv run python src/export.py \
-  --solver-path gepa_logs/<run_id>/optimized_solver.json \
-  --solver-version v1 \
-  --output submission.txt
-
-# From the latest run
-uv run python src/export.py \
-  --solver-path optimized_solver.json \
-  --solver-version v1 \
-  --output submission.txt
-```
-
-This generates a Jinja2 template (max 10KB) with `{{ equation1 }}` and `{{ equation2 }}` placeholders. Submit this file to the competition.
-
-## Dashboard
-
-A Next.js dashboard for monitoring optimization runs and exploring benchmark data.
-
-```bash
-cd dashboard && npm install && npm run dev -- -p 3001
-```
-
-Open http://localhost:3001
-
-### What it shows
-
-**GEPA Experiments tab** — live monitoring of optimization runs:
-- Accuracy chart over time (hover for details)
-- Metric evaluations — click any dot to see the problem, prediction, and feedback
-- Iteration timeline — see which parent was picked, what instruction was proposed, whether it was accepted/rejected, and why
-- Candidate programs — expand to read the actual instruction text GEPA produced
-- Pareto frontier — which candidate is best on which problems
-- Auto-refreshes every 3 seconds while a run is active
-
-**Other tabs:**
-- Leaderboard — benchmark model scores + our eval runs (merged at read time, our runs shown with cyan `OURS` badge)
-- Model Breakdown — per-model analysis
-- Problems — problem explorer
-- Runs — individual benchmark runs with search/filtering
-
-### Data sources
-
-- `gepa_observations.db` (project root) — written during GEPA runs and evaluations, feeds GEPA Experiments tab and Leaderboard (our eval runs)
-- `dashboard/data.db` — pre-built from HuggingFace benchmark (read-only), feeds Leaderboard (benchmark models), Runs, Problems tabs
-
 ## Current Best Submission
 
-Generated after two rounds of GEPA heavy optimization (18 candidates each, ~3,000 metric calls per round). The second round was seeded with the best candidate from the first.
-
-**Training setup:**
-- **Student LM:** Gemini 2.5 Flash Lite (Vertex AI) — runs every problem evaluation (~$0.10/M input, $0.40/M output)
-- **Reflection LM:** Gemini 3.1 Pro Preview (Vertex AI) — proposes improved instructions (~$2/M input, $12/M output)
-- **Total cost:** < $20 across both rounds
-- **Training data:** 1,269 problems (1,016 train / 253 val), balanced TRUE/FALSE
-
-**Evaluation results on benchmark 400 problems (200 normal + 200 hard):**
-- Accuracy: ~70% on normal, competitive with Claude Haiku 4.5 and Kimi K2.5
-- The prompt teaches a deterministic 4-step algorithm: trivialization check → counterexample search via 4 standard magma models → advanced heuristics → final verdict
+**78.5% accuracy** on 400 benchmark problems (200 normal + 200 hard) with Gemini 2.5 Flash Lite. Trained with two rounds of GEPA heavy optimization, < $20 total on Vertex AI.
 
 <details>
-<summary><strong>submission.txt</strong> (5.9 KB)</summary>
+<summary><strong>submission.txt</strong> (5.9 KB) — click to expand</summary>
 
 ```
 You are a mathematician specializing in equational theories of magmas.
@@ -265,26 +27,21 @@ Follow this deterministic flowchart exactly.
 
 **Step 1: Isolated Variable Trivialization (Applies ONLY to `equation1`)**
 - Check if `equation1` is of the exact form `V = Term` or `Term = V`, where `V` is a single standalone variable that does **NOT** appear anywhere in `Term`.
-- *Examples:* `x = y * (z * w)` or `x = (y * y) * z`.
 - If YES: `equation1` forces the magma to be trivial. Output **TRUE**.
 - If NO: Proceed to Step 2.
 
 **Step 2: Standard Magma Models for Counterexamples**
-Test 4 standard models to find a counterexample.
-*How to evaluate the models safely and instantly:*
-1. **Left-zero semigroup ($a * b = a$):** Any expression evaluates to its **left-most variable**.
-2. **Right-zero semigroup ($a * b = b$):** Any expression evaluates to its **right-most variable**.
-3. **Constant magma ($a * b = c$):** Any expression that contains **at least one `*` operation** evaluates to the constant `c`. A single standalone variable remains itself.
-4. **XOR / Parity magma ($a * b = a \oplus b$):** Flatten the expression and count occurrences of EACH variable on each side. ODD occurrences → variable remains. EVEN occurrences → variable cancels out.
+Test 4 standard models to find a counterexample:
+1. **Left-zero semigroup ($a * b = a$):** Any expression evaluates to its left-most variable.
+2. **Right-zero semigroup ($a * b = b$):** Any expression evaluates to its right-most variable.
+3. **Constant magma ($a * b = c$):** Any expression with `*` evaluates to constant `c`.
+4. **XOR / Parity magma ($a * b = a \oplus b$):** Count variable occurrences — odd stays, even cancels.
 
-*For each model:*
-1. Simplify `equation1`. If not a tautology → **ABORT** this model (constraint). If tautology → model is **VALID**.
-2. If VALID, simplify `equation2`. If constraint → **Output FALSE** (counterexample found). If tautology → inconclusive, try next model.
+For each model: simplify equation1 (constraint = abort, tautology = valid). If valid, simplify equation2 (constraint = FALSE, tautology = inconclusive).
 
 **Step 3: Advanced Heuristics for Unresolved Cases**
-If Step 2 found no counterexample:
-- *All 4 models aborted:* 3+ distinct variables → **TRUE**, 2 variables → **FALSE**
-- *At least one valid model was inconclusive:* Check for specific restrictive syntactic forms (product of distinct variables with free variable, or absorption/identity form with 3+ variables) → **TRUE** if matched, else **FALSE**
+- All 4 models aborted: 3+ distinct variables -> TRUE, 2 variables -> FALSE
+- At least one valid model inconclusive: check for specific restrictive syntactic forms -> TRUE if matched, else FALSE
 
 **Step 4: Final Verdict**
 Output step-by-step reasoning following the algorithm exactly.
@@ -292,27 +49,115 @@ Output step-by-step reasoning following the algorithm exactly.
 
 </details>
 
+## Training
+
+```bash
+# Smoke test — 20 problems, 60 metric calls, dry-run eval
+uv run python src/run_gepa.py --solver v1 --baby
+
+# Light budget (~1,724 metric calls, ~$5)
+uv run python src/run_gepa.py --solver v1 --auto light
+
+# Heavy budget (~3,210 metric calls, ~$10)
+uv run python src/run_gepa.py --solver v1 --auto heavy
+
+# Heavy + auto-eval on all 400 benchmark problems after training
+uv run python src/run_gepa.py --solver v1 --auto heavy --auto-eval
+
+# Start from a seed prompt (e.g. best candidate from a previous run)
+uv run python src/run_gepa.py --solver v1 --auto heavy \
+  --initial-prompt src/seed_from_32d09f740fd2.txt
+
+# Use different models (any litellm-compatible model string)
+uv run python src/run_gepa.py --solver v1 --auto light \
+  --student-model openai/gpt-4o-mini \
+  --reflection-model openai/gpt-4o
+```
+
+Set the corresponding API key env var for your provider (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `TOGETHER_API_KEY`, or Vertex AI credentials).
+
+## Evaluation
+
+```bash
+# Evaluate optimized solver on all 400 benchmark problems
+uv run python src/run_eval.py --solver-path optimized_solver.json --subset all_400
+
+# Evaluate a raw prompt file
+uv run python src/run_eval.py --solver-path submission.txt --subset all_400
+
+# With Gemini thinking tokens enabled
+uv run python src/run_eval.py --solver-path submission.txt --subset all_400 \
+  --thinking-budget 4096
+
+# Repeat 3 times (for consistency measurement)
+uv run python src/run_eval.py --solver-path submission.txt --subset all_400 --repeat 3
+
+# Different model
+uv run python src/run_eval.py --solver-path submission.txt --subset all_400 \
+  --student-model vertex_ai/gemini-2.5-flash
+
+# Dry-run (predict FALSE, no LLM calls — for testing)
+uv run python src/run_eval.py --solver-path submission.txt --subset all_400 --dry-run
+```
+
+Results are stored in `gepa_observations.db` and appear in the dashboard Leaderboard and Evaluations tabs.
+
+## Exporting a Submission
+
+```bash
+uv run python src/export.py \
+  --solver-path gepa_logs/<run_id>/optimized_solver.json \
+  --solver-version v1 \
+  --output submission.txt
+```
+
+Generates a Jinja2 template (max 10KB) with `{{ equation1 }}` and `{{ equation2 }}` placeholders.
+
+## Dashboard
+
+```bash
+cd dashboard && npm install && npm run dev -- -p 3001
+```
+
+Open http://localhost:3001
+
+| Tab | Description |
+|-----|-------------|
+| **Leaderboard** | 25 benchmark models + our eval runs side-by-side, sorted by accuracy/F1/cost. Our runs shown with cyan `OURS` badge. |
+| **Evaluations** | Per-problem results for each eval run. Filter by correct/wrong, expected TRUE/FALSE, normal/hard. Click a problem to see the full model response. Stats recalculate based on filters. |
+| **GEPA Experiments** | Live training run monitoring — accuracy chart, iteration timeline (accept/reject/skip), candidate instructions, Pareto frontier. Auto-refreshes during active runs. |
+| **Model Breakdown** | Per-model analysis from the benchmark dataset. |
+| **Problems** | Browse all 1,269 problems with equations and answers. |
+| **Runs** | Individual benchmark model runs with search and accuracy filtering. |
+
+## Data Setup
+
+```bash
+# Problems (required)
+.venv/bin/hf download SAIRfoundation/equational-theories-selected-problems --local-dir data/
+
+# Benchmark runs (recommended — used for reference solutions in metric feedback)
+.venv/bin/hf download SAIRfoundation/equational-theories-benchmark --local-dir data/
+```
+
 ## Project Structure
 
 ```
-baby_run.py          — small test run (20 problems, same models as full run)
-baby_run_claude.py   — test run using Claude Code SDK
 src/
-  run_gepa.py        — main GEPA optimization script
+  run_gepa.py        — GEPA optimization (training)
   run_eval.py        — standalone evaluation on benchmark problems
+  export.py          — export optimized prompt to submission template
   solver.py          — DSPy solver modules (V1, V2, V3)
   metric.py          — scoring with reference solution feedback
   data.py            — data loading and train/val split
-  observer.py        — SQLite logging for LLM calls, GEPA events, and eval results
-  cc_adapter.py      — Claude Code SDK adapter (slow, see warning)
-  export.py          — export optimized prompt to submission template
+  observer.py        — SQLite logging for LLM calls and optimization events
 tests/
-  test_run_eval.py   — tests for evaluation pipeline (dry-run, no API calls)
-data/
-  problems_*.jsonl   — competition problems
-  benchmark_*        — benchmark model runs (download from HuggingFace)
+  test_run_eval.py   — tests for evaluation pipeline
 dashboard/
   app/               — Next.js app with API routes and components
+data/
+  problems_*.jsonl   — competition problems
+  benchmark_*        — benchmark model runs
 gepa_logs/
   <run_id>/          — per-run checkpoints and optimized solvers
 ```
