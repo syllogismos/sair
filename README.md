@@ -123,22 +123,29 @@ Open http://localhost:3001
 
 | Tab | Description |
 |-----|-------------|
-| **Leaderboard** | 25 benchmark models + our eval runs side-by-side, sorted by accuracy/F1/cost. Our runs shown with cyan `OURS` badge. |
-| **Evaluations** | Per-problem results for each eval run. Filter by correct/wrong, expected TRUE/FALSE, normal/hard. Click a problem to see the full model response. Stats recalculate based on filters. |
-| **GEPA Experiments** | Live training run monitoring — accuracy chart, iteration timeline (accept/reject/skip), candidate instructions, Pareto frontier. Auto-refreshes during active runs. |
-| **Model Breakdown** | Per-model analysis from the benchmark dataset. |
+| **Leaderboard** | 25 benchmark models + our eval runs side-by-side, sorted by accuracy/F1/cost. Our runs shown with cyan `OURS` badge. Filter by benchmark config (Normal/Hard, Low/Default reasoning). |
+| **Evaluations** | Per-problem results for each eval run. Filter by correct/wrong, expected TRUE/FALSE, normal/hard. Click a problem to expand and see the full model response and LLM call details. Stats (accuracy, F1, confusion matrix) recalculate based on active filters. Auto-refreshes during running evals. |
+| **GEPA Experiments** | Live training run monitoring — accuracy chart over metric calls, iteration timeline (accept/reject/skip with reasoning), candidate instructions (click to expand), Pareto frontier. Shows train/val sizes, cost, LLM call breakdown. Auto-refreshes every 3s during active runs. |
+| **GEPA Replay** | Step-through animation of a completed GEPA run from its checkpoint (`gepa_state.bin`). Visualizes how candidates evolved, which parents were selected, subsample scores, and the Pareto frontier at each iteration. |
+| **Model Breakdown** | Per-model TRUE vs FALSE accuracy scatter plot and detailed stats from the benchmark dataset. |
 | **Problems** | Browse all 1,269 problems with equations and answers. |
-| **Runs** | Individual benchmark model runs with search and accuracy filtering. |
+| **Runs** | Individual benchmark model runs (60,000 total) with search by problem ID and accuracy filtering. |
 
 ## Data Setup
 
 ```bash
-# Problems (required)
+# 1. Download from HuggingFace (both CSV and JSONL formats are provided)
 .venv/bin/hf download SAIRfoundation/equational-theories-selected-problems --local-dir data/
-
-# Benchmark runs (recommended — used for reference solutions in metric feedback)
 .venv/bin/hf download SAIRfoundation/equational-theories-benchmark --local-dir data/
+
+# 2. Build dashboard SQLite database from the downloaded data
+uv run python scripts/build_sqlite.py
+
+# 3. Build static JSON files for the dashboard (runs sample)
+uv run python scripts/build_runs_sample.py
 ```
+
+The static JSON files in `dashboard/public/data/` (leaderboard.json, models.json, etc.) are checked into the repo. The `build_sqlite.py` script creates `dashboard/data.db` (~275MB) from the JSONL files — this is gitignored due to size.
 
 ## Project Structure
 
@@ -151,12 +158,18 @@ src/
   metric.py          — scoring with reference solution feedback
   data.py            — data loading and train/val split
   observer.py        — SQLite logging for LLM calls and optimization events
+scripts/
+  build_sqlite.py    — build dashboard/data.db from HuggingFace data
+  build_runs_sample.py — build stratified sample of runs for dashboard
 tests/
   test_run_eval.py   — tests for evaluation pipeline
 dashboard/
   app/               — Next.js app with API routes and components
+  public/data/       — static JSON files (leaderboard, models, problems)
+  data.db            — SQLite database built by scripts/build_sqlite.py (gitignored)
 data/
-  problems_*.jsonl   — competition problems
+  problems_*.{csv,jsonl}  — competition problems (from HuggingFace)
+  benchmark_*.{csv,jsonl} — benchmark model runs and metadata
   benchmark_*        — benchmark model runs
 gepa_logs/
   <run_id>/          — per-run checkpoints and optimized solvers
