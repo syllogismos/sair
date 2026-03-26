@@ -27,24 +27,68 @@ Follow this deterministic flowchart exactly.
 
 **Step 1: Isolated Variable Trivialization (Applies ONLY to `equation1`)**
 - Check if `equation1` is of the exact form `V = Term` or `Term = V`, where `V` is a single standalone variable that does **NOT** appear anywhere in `Term`.
+- *Examples:* `x = y * (z * w)` or `x = (y * y) * z`.
 - If YES: `equation1` forces the magma to be trivial. Output **TRUE**.
 - If NO: Proceed to Step 2.
 
 **Step 2: Standard Magma Models for Counterexamples**
-Test 4 standard models to find a counterexample:
-1. **Left-zero semigroup ($a * b = a$):** Any expression evaluates to its left-most variable.
-2. **Right-zero semigroup ($a * b = b$):** Any expression evaluates to its right-most variable.
-3. **Constant magma ($a * b = c$):** Any expression with `*` evaluates to constant `c`.
-4. **XOR / Parity magma ($a * b = a \oplus b$):** Count variable occurrences — odd stays, even cancels.
+Test 4 standard models to find a counterexample.
+*How to evaluate the models safely and instantly:*
+1. **Left-zero semigroup ($a * b = a$):** Any expression evaluates to its **left-most variable**.
+   - e.g., `(y * x) * z` becomes `y`. `x = (y * y) * (z * w)` simplifies to `x = y`.
+2. **Right-zero semigroup ($a * b = b$):** Any expression evaluates to its **right-most variable**.
+   - e.g., `x * (y * z)` becomes `z`. `x = y * (z * x)` becomes `x = x`.
+3. **Constant magma ($a * b = c$):** Any expression that contains **at least one `*` operation** evaluates to the constant `c`. A single standalone variable remains itself.
+   - e.g., `x * y` becomes `c`. `x = (y * z) * w` becomes `x = c`. `x * y = z * w` becomes `c = c`.
+4. **XOR / Parity magma ($a * b = a \oplus b$):** Flatten the expression and count occurrences of EACH variable on each side.
+   - ODD occurrences → variable remains.
+   - EVEN occurrences → variable cancels out (becomes 0).
+   - Combine remaining variables with XOR (`^`).
+   - e.g., `x = y * ((x * z) * y)` → LHS is `x`. RHS has two `y`, one `x`, one `z` → RHS is `x ^ z`. Equation becomes `x = x ^ z`, which means `0 = z`.
 
-For each model: simplify equation1 (constraint = abort, tautology = valid). If valid, simplify equation2 (constraint = FALSE, tautology = inconclusive).
+*For each model:*
+1. Simplify `equation1`.
+   - ANY equation that is not identical on both sides is a **CONSTRAINT** (e.g., `x = y`, `x = z`, `x = c`, `0 = z`, `x = y ^ z`, `x ^ y = z ^ w`). Constraints force restricted values because they do not hold for all possible variable assignments. **Abort** this model and try the next.
+   - ONLY identical equations are **TAUTOLOGIES** (e.g., `x = x`, `c = c`, `0 = 0`, `x ^ y = x ^ y`). This model is **VALID**.
+2. If the model is **VALID**, simplify `equation2`.
+   - If `equation2` simplifies to a **CONSTRAINT** (e.g., `x = y`, `x = c`, `x = z`), `equation2` is FALSE in this model. You found a counterexample! **Output FALSE** immediately.
+   - If `equation2` simplifies to a **TAUTOLOGY**, this model is compatible but inconclusive. Proceed to the next model.
+*CRITICAL:* Do NOT say "All four models aborted" if ANY model was valid. Even if a valid model is inconclusive, it means it did NOT abort.
 
 **Step 3: Advanced Heuristics for Unresolved Cases**
-- All 4 models aborted: 3+ distinct variables -> TRUE, 2 variables -> FALSE
-- At least one valid model inconclusive: check for specific restrictive syntactic forms -> TRUE if matched, else FALSE
+If Step 2 did NOT find a counterexample (meaning all valid models were inconclusive, or all 4 models aborted), apply these heuristics to `equation1`:
+
+*Condition A: ALL FOUR models aborted (forced triviality for `equation1`)*
+- Count the number of DISTINCT variables in `equation1`.
+- If `equation1` has **3 or more distinct variables**, it is highly restrictive and forces global triviality. Output **TRUE**.
+- If `equation1` has **only 2 distinct variables**, output **FALSE**.
+
+*Condition B: NOT all models aborted (At least one valid model was inconclusive)*
+- Check if `equation1` matches any of these exact highly restrictive syntactic forms:
+
+  - **Form 1 (Product of distinct variables equals Term with free variable):** `equation1` is EXACTLY of the form `A * B = Term` OR `Term = A * B`, where:
+    1. The product side is exactly two distinct standalone variables multiplied together (e.g., exactly `x * y` or `u * v`. It cannot be `x * x` and cannot have nested operations like `(x * y) * z`).
+    2. `Term` contains at least one **free variable** (a variable that is NOT `A` and NOT `B`).
+    *(Example 1: `x * y = y * ((y * z) * x)` matches because LHS is exactly `x * y` and RHS has `z`. Example 2: `x * y = ((z * y) * y) * w` matches because LHS is `x * y` and RHS has `z` and `w`.)*
+
+  - **Form 2 (Absorption/Identity Form):** `equation1` is EXACTLY of the form `V = V * Term` OR `V = Term * V`, where:
+    1. `V` is a single standalone variable.
+    2. The other side is exactly `V` multiplied by some `Term` (or `Term` multiplied by `V`).
+    3. `equation1` contains **3 or more distinct variables** in total.
+    *(Example 1: `x = x * (y * (x * z))` matches because LHS is `x` and RHS is `x * Term` and it has 3 distinct variables. Example 2: `x = ((y * z) * z) * x` matches because LHS is `x` and RHS is `Term * x` with 3 distinct variables.)*
+
+- If `equation1` matches Form 1 OR Form 2 perfectly, it globally forces the magma to be highly structured or trivial. Output **TRUE**.
+- If it does NOT match these exact criteria, output **FALSE**.
 
 **Step 4: Final Verdict**
-Output step-by-step reasoning following the algorithm exactly.
+Output your step-by-step reasoning following the algorithm exactly, then output the final verdict in this exact format:
+
+### verdict
+True/False
+
+Output format (use exact headers without any additional text or formatting):
+VERDICT: must be exactly TRUE or FALSE (in the same line).
+REASONING: must be non-empty.
 ```
 
 </details>
