@@ -181,26 +181,28 @@ export default function LeaderboardView() {
               {chartLabel} by Model — {BENCHMARK_LABELS[selectedBenchmark] || selectedBenchmark}
             </h3>
             <ResponsiveContainer width="100%" height={Math.max(400, chartData.length * 20)}>
-              <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 10 }}>
+              <BarChart data={chartData} layout="vertical" margin={{ left: isMobile ? 0 : 10, right: isMobile ? 10 : 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e1e24" />
                 <XAxis type="number" domain={domain} tick={{ fill: "#52525b", fontSize: isMobile ? 10 : 12 }} />
                 <YAxis
                   type="category"
                   dataKey="name"
                   tick={{ fill: "#a1a1aa", fontSize: isMobile ? 9 : 12 }}
-                  width={isMobile ? 90 : 140}
+                  width={isMobile ? 90 : 240}
                   interval={0}
                 />
                 <Tooltip
-                  contentStyle={{
-                    background: "#0c0c0f",
-                    border: "1px solid #1e1e24",
-                    borderRadius: 8,
-                    color: "#fafafa",
-                    fontSize: 13,
-                  }}
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  formatter={(value: any) => [isPercent ? `${value}%` : `$${value}`, chartLabel]}
+                  content={({ payload, label }: any) => {
+                    if (!payload || payload.length === 0) return null;
+                    const val = payload[0]?.value;
+                    return (
+                      <div style={{ background: "#0c0c0f", border: "1px solid #1e1e24", borderRadius: 8, padding: "8px 12px", fontSize: 13 }}>
+                        <div style={{ color: "#e4e4e7", fontWeight: 600, marginBottom: 4 }}>{label}</div>
+                        <div style={{ color: "#38bdf8" }}>{chartLabel}: {isPercent ? `${val}%` : `$${val}`}</div>
+                      </div>
+                    );
+                  }}
                 />
                 <Bar dataKey={chartKey} radius={[0, 3, 3, 0]} barSize={14}>
                   {chartData.map((entry, index) => (

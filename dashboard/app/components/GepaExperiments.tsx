@@ -821,7 +821,7 @@ function LiveCandidates({ iterations }: { iterations: Iteration[] }) {
   );
 }
 
-function IterationsTimeline({ iterations, totalMetricCalls, valSize }: { iterations: Iteration[]; totalMetricCalls: number; valSize: number | null; }) {
+function IterationsTimeline({ iterations, totalMetricCalls, valSize, runFinished }: { iterations: Iteration[]; totalMetricCalls: number; valSize: number | null; runFinished?: boolean; }) {
   if (iterations.length === 0) return null;
 
   // Group by iteration number
