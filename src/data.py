@@ -11,7 +11,7 @@ def load_problems(subset: str) -> list[dspy.Example]:
     """Load problems from a JSONL file as DSPy Examples.
 
     Args:
-        subset: one of 'normal', 'hard1', 'hard2'
+        subset: one of 'normal', 'hard', 'hard1', 'hard2', 'hard3'
     """
     path = DATA_DIR / f"problems_{subset}.jsonl"
     examples = []

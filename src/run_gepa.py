@@ -80,7 +80,7 @@ def main():
     parser.add_argument("--initial-prompt", default=None, help="Path to text file with initial instruction for the solver")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--auto-eval", action="store_true", help="Run full evaluation on benchmark problems after GEPA completes")
-    parser.add_argument("--eval-subset", default="all_400", choices=["normal_200", "hard_200", "all_400", "all_1269"],
+    parser.add_argument("--eval-subset", default="all_400", choices=["normal_200", "hard_200", "all_400", "all"],
                         help="Problem subset for auto-eval (default: all_400)")
     parser.add_argument("--baby", action="store_true",
                         help="Smoke test: 20 problems, 60 metric calls, minibatch=10, auto-eval with --dry-run")
@@ -96,13 +96,14 @@ def main():
     # Setup
     setup_vertex_ai()
 
-    # Load data
+    # Load data (hard1 is a deduplicated subset of hard, so we skip hard)
     print("Loading problems...")
     normal = load_problems("normal")
     hard1 = load_problems("hard1")
     hard2 = load_problems("hard2")
-    all_problems = normal + hard1 + hard2
-    print(f"  Total: {len(all_problems)} problems ({len(normal)} normal, {len(hard1)} hard1, {len(hard2)} hard2)")
+    hard3 = load_problems("hard3")
+    all_problems = normal + hard1 + hard2 + hard3
+    print(f"  Total: {len(all_problems)} problems ({len(normal)} normal, {len(hard1)} hard1, {len(hard2)} hard2, {len(hard3)} hard3)")
 
     if args.baby:
         # Use a small slice: first 10 + last 10

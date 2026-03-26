@@ -96,10 +96,11 @@ def load_benchmark_problems(subset: str) -> list[dict]:
     elif subset == "all_400":
         return load_benchmark_problems("normal_200") + load_benchmark_problems("hard_200")
 
-    elif subset == "all_1269":
+    elif subset == "all":
+        hard3 = load_problems("hard3")
         return [
             {"problem_id": ex.id, "equation1": ex.equation1, "equation2": ex.equation2, "answer": ex.answer}
-            for ex in normal + hard1 + hard2
+            for ex in normal + hard1 + hard2 + hard3
         ]
     else:
         raise ValueError(f"Unknown subset: {subset}")
@@ -523,7 +524,7 @@ def main():
     parser.add_argument("--solver-path", required=True, help="Path to optimized_solver.json or raw prompt .txt")
     parser.add_argument("--solver-version", default="v1", choices=["v1", "v2", "v3"])
     parser.add_argument("--student-model", default="vertex_ai/gemini-2.5-flash-lite")
-    parser.add_argument("--subset", default="all_400", choices=["normal_200", "hard_200", "all_400", "all_1269"])
+    parser.add_argument("--subset", default="all_400", choices=["normal_200", "hard_200", "all_400", "all"])
     parser.add_argument("--gepa-run-id", default=None, help="GEPA run ID to reuse val results from")
     parser.add_argument("--display-name", default=None, help="Custom display name for leaderboard")
     parser.add_argument("--cheatsheet", default=None, help="Path to cheatsheet file (for v2/v3)")
