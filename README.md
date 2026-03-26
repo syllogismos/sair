@@ -133,30 +133,27 @@ Open http://localhost:3001
 
 ## Data Setup
 
+All problem files and dashboard static JSONs are checked into the repo. You only need two extra steps:
+
 ```bash
-# 1. Download from HuggingFace (provides JSONL files)
-.venv/bin/hf download SAIRfoundation/equational-theories-selected-problems --local-dir data/
-.venv/bin/hf download SAIRfoundation/equational-theories-benchmark --local-dir data/
+# 1. Download benchmark runs (~265MB, needed for metric feedback during training)
+uv pip install huggingface_hub
+.venv/bin/hf download SAIRfoundation/equational-theories-benchmark data/runs.jsonl --repo-type dataset --local-dir /tmp/hf_bench
+mv /tmp/hf_bench/data/runs.jsonl data/benchmark_runs.jsonl
 
-# 2. Rename HF files to our naming convention
-mv data/data/normal.jsonl data/problems_normal.jsonl
-mv data/data/hard1.jsonl data/problems_hard1.jsonl
-mv data/data/hard2.jsonl data/problems_hard2.jsonl
-mv data/data/benchmarks.jsonl data/benchmark_benchmarks.jsonl
-mv data/data/runs.jsonl data/benchmark_runs.jsonl
-mv data/data/cells.jsonl data/benchmark_cells.jsonl
-mv data/data/leaderboard.jsonl data/benchmark_leaderboard.jsonl
-mv data/data/prompt_templates.jsonl data/benchmark_prompt_templates.jsonl
-mv data/data/models.csv data/benchmark_models.csv
-
-# 3. Build dashboard SQLite database from the JSONL files
+# 2. Build dashboard SQLite database
 uv run python scripts/build_sqlite.py
-
-# 4. Build static JSON files for the dashboard
-uv run python scripts/build_runs_sample.py
 ```
 
-The CSV files in `data/` are convenience copies generated from the JSONL files. The static JSON files in `dashboard/public/data/` are checked into the repo. The `build_sqlite.py` script creates `dashboard/data.db` (~275MB) from the JSONL files — this is gitignored due to size.
+**What's already in the repo:**
+- `data/problems_*.jsonl` — all 1,669 problems (normal, hard1, hard2, hard3)
+- `data/benchmark_*.{jsonl,csv}` — leaderboard, models, benchmarks, cells, templates
+- `dashboard/public/data/*.json` — static JSON files for the dashboard
+
+**What's gitignored (you create locally):**
+- `data/benchmark_runs.jsonl` (~265MB) — downloaded from HuggingFace
+- `dashboard/data.db` (~275MB) — built by `scripts/build_sqlite.py`
+- `gepa_observations.db` — created automatically during training/eval runs
 
 ## Project Structure
 
