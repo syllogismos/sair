@@ -134,18 +134,29 @@ Open http://localhost:3001
 ## Data Setup
 
 ```bash
-# 1. Download from HuggingFace (both CSV and JSONL formats are provided)
+# 1. Download from HuggingFace (provides JSONL files)
 .venv/bin/hf download SAIRfoundation/equational-theories-selected-problems --local-dir data/
 .venv/bin/hf download SAIRfoundation/equational-theories-benchmark --local-dir data/
 
-# 2. Build dashboard SQLite database from the downloaded data
+# 2. Rename HF files to our naming convention
+mv data/data/normal.jsonl data/problems_normal.jsonl
+mv data/data/hard1.jsonl data/problems_hard1.jsonl
+mv data/data/hard2.jsonl data/problems_hard2.jsonl
+mv data/data/benchmarks.jsonl data/benchmark_benchmarks.jsonl
+mv data/data/runs.jsonl data/benchmark_runs.jsonl
+mv data/data/cells.jsonl data/benchmark_cells.jsonl
+mv data/data/leaderboard.jsonl data/benchmark_leaderboard.jsonl
+mv data/data/prompt_templates.jsonl data/benchmark_prompt_templates.jsonl
+mv data/data/models.csv data/benchmark_models.csv
+
+# 3. Build dashboard SQLite database from the JSONL files
 uv run python scripts/build_sqlite.py
 
-# 3. Build static JSON files for the dashboard (runs sample)
+# 4. Build static JSON files for the dashboard
 uv run python scripts/build_runs_sample.py
 ```
 
-The static JSON files in `dashboard/public/data/` (leaderboard.json, models.json, etc.) are checked into the repo. The `build_sqlite.py` script creates `dashboard/data.db` (~275MB) from the JSONL files — this is gitignored due to size.
+The CSV files in `data/` are convenience copies generated from the JSONL files. The static JSON files in `dashboard/public/data/` are checked into the repo. The `build_sqlite.py` script creates `dashboard/data.db` (~275MB) from the JSONL files — this is gitignored due to size.
 
 ## Project Structure
 
