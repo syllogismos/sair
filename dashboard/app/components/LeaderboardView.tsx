@@ -114,16 +114,25 @@ export default function LeaderboardView() {
   }, [data, selectedBenchmark, sortBy]);
 
   const chartData = useMemo(
-    () =>
-      filtered.map((x) => ({
-        name: shortModelName(x.model_id, models, isMobile ? 14 : 32),
-        fullName: shortModelName(x.model_id, models),
-        accuracy: +(x.accuracy * 100).toFixed(1),
-        f1: +(x.f1_score * 100).toFixed(1),
-        cost: +x.avg_cost_usd.toFixed(4),
-        consistency: +(x.repeat_consistency * 100).toFixed(1),
-        isOurs: isOurModel(x.model_id, models),
-      })),
+    () => {
+      const nameCounts: Record<string, number> = {};
+      return filtered.map((x) => {
+        let name = shortModelName(x.model_id, models, isMobile ? 14 : 32);
+        const fullName = shortModelName(x.model_id, models);
+        // Deduplicate names for Recharts (uses name as category key)
+        nameCounts[name] = (nameCounts[name] || 0) + 1;
+        if (nameCounts[name] > 1) name = `${name} (${nameCounts[name]})`;
+        return {
+          name,
+          fullName,
+          accuracy: +(x.accuracy * 100).toFixed(1),
+          f1: +(x.f1_score * 100).toFixed(1),
+          cost: +x.avg_cost_usd.toFixed(4),
+          consistency: +(x.repeat_consistency * 100).toFixed(1),
+          isOurs: isOurModel(x.model_id, models),
+        };
+      });
+    },
     [filtered, models, isMobile]
   );
 
