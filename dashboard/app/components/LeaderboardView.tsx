@@ -116,7 +116,8 @@ export default function LeaderboardView() {
   const chartData = useMemo(
     () =>
       filtered.map((x) => ({
-        name: shortModelName(x.model_id, models, isMobile ? 14 : undefined),
+        name: shortModelName(x.model_id, models, isMobile ? 14 : 32),
+        fullName: shortModelName(x.model_id, models),
         accuracy: +(x.accuracy * 100).toFixed(1),
         f1: +(x.f1_score * 100).toFixed(1),
         cost: +x.avg_cost_usd.toFixed(4),
@@ -188,17 +189,18 @@ export default function LeaderboardView() {
                   type="category"
                   dataKey="name"
                   tick={{ fill: "#a1a1aa", fontSize: isMobile ? 9 : 12 }}
-                  width={isMobile ? 90 : 240}
+                  width={isMobile ? 90 : 280}
                   interval={0}
                 />
                 <Tooltip
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  content={({ payload, label }: any) => {
+                  content={({ payload }: any) => {
                     if (!payload || payload.length === 0) return null;
                     const val = payload[0]?.value;
+                    const fullName = payload[0]?.payload?.fullName;
                     return (
                       <div style={{ background: "#0c0c0f", border: "1px solid #1e1e24", borderRadius: 8, padding: "8px 12px", fontSize: 13 }}>
-                        <div style={{ color: "#e4e4e7", fontWeight: 600, marginBottom: 4 }}>{label}</div>
+                        <div style={{ color: "#e4e4e7", fontWeight: 600, marginBottom: 4 }}>{fullName}</div>
                         <div style={{ color: "#38bdf8" }}>{chartLabel}: {isPercent ? `${val}%` : `$${val}`}</div>
                       </div>
                     );

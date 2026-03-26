@@ -8,12 +8,14 @@ import RunsExplorer from "./components/RunsExplorer";
 import GepaExperiments from "./components/GepaExperiments";
 import AutoResearchView from "./components/AutoResearchView";
 import GepaReplay from "./components/GepaReplay";
+import EvalExplorer from "./components/EvalExplorer";
 
-const TABS = ["Leaderboard", "Model Breakdown", "Problems", "Runs", "GEPA Experiments", "GEPA Replay", "AutoResearch"] as const;
+const TABS = ["Leaderboard", "Evaluations", "Model Breakdown", "Problems", "Runs", "GEPA Experiments", "GEPA Replay", "AutoResearch"] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_SLUGS: Record<Tab, string> = {
   "Leaderboard": "leaderboard",
+  "Evaluations": "evals",
   "Model Breakdown": "models",
   "Problems": "problems",
   "Runs": "runs",
@@ -131,6 +133,13 @@ export default function Home() {
       <main className="flex-1 px-3 sm:px-6 py-4 sm:py-6">
         <div className="max-w-[1400px] mx-auto">
           {activeTab === "Leaderboard" && <LeaderboardView key={tabKey} />}
+          {activeTab === "Evaluations" && (
+            <EvalExplorer
+              key={tabKey}
+              initialEvalId={gepaRunId}
+              onNavigate={(evalId) => navigate("Evaluations", evalId)}
+            />
+          )}
           {activeTab === "Model Breakdown" && <ModelBreakdownView key={tabKey} />}
           {activeTab === "Problems" && <ProblemExplorer key={tabKey} />}
           {activeTab === "Runs" && <RunsExplorer key={tabKey} />}

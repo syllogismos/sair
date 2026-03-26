@@ -28,9 +28,10 @@ interface EvalRun {
 
 // Map our subset names to benchmark_ids
 const SUBSET_TO_BENCHMARK: Record<string, string[]> = {
-  normal_200: ["normal_200_common_25_low_reason"],
-  hard_200: ["hard_200_common_25_low_reason"],
-  all_400: ["normal_200_common_25_low_reason", "hard_200_common_25_low_reason"],
+  normal_200: ["normal_200_common_25_low_reason", "normal_200_common_25_default_reason"],
+  hard_200: ["hard_200_common_25_low_reason", "hard_200_common_25_default_reason"],
+  all_400: ["normal_200_common_25_low_reason", "normal_200_common_25_default_reason",
+            "hard_200_common_25_low_reason", "hard_200_common_25_default_reason"],
 };
 
 export async function GET() {
@@ -80,10 +81,10 @@ export async function GET() {
 
         for (const benchmarkId of benchmarkIds) {
           // For all_400, split metrics between normal and hard based on problem prefix
-          // For single-subset runs, use metrics as-is
-          if (run.benchmark_subset === "all_400" && benchmarkIds.length > 1) {
-            // Need to compute per-subset metrics from eval_results
-            const subsetPrefix = benchmarkId.startsWith("normal") ? "normal" : "hard";
+          // For single-subset runs (normal_200, hard_200), use aggregate metrics as-is
+          const needsSplit = run.benchmark_subset === "all_400";
+          const subsetPrefix = benchmarkId.startsWith("normal") ? "normal" : "hard";
+          if (needsSplit) {
             const results = db
               .prepare(`
                 SELECT

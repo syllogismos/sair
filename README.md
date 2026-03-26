@@ -232,6 +232,66 @@ Open http://localhost:3001
 - `gepa_observations.db` (project root) — written during GEPA runs and evaluations, feeds GEPA Experiments tab and Leaderboard (our eval runs)
 - `dashboard/data.db` — pre-built from HuggingFace benchmark (read-only), feeds Leaderboard (benchmark models), Runs, Problems tabs
 
+## Current Best Submission
+
+Generated after two rounds of GEPA heavy optimization (18 candidates each, ~3,000 metric calls per round). The second round was seeded with the best candidate from the first.
+
+**Training setup:**
+- **Student LM:** Gemini 2.5 Flash Lite (Vertex AI) — runs every problem evaluation (~$0.10/M input, $0.40/M output)
+- **Reflection LM:** Gemini 3.1 Pro Preview (Vertex AI) — proposes improved instructions (~$2/M input, $12/M output)
+- **Total cost:** < $20 across both rounds
+- **Training data:** 1,269 problems (1,016 train / 253 val), balanced TRUE/FALSE
+
+**Evaluation results on benchmark 400 problems (200 normal + 200 hard):**
+- Accuracy: ~70% on normal, competitive with Claude Haiku 4.5 and Kimi K2.5
+- The prompt teaches a deterministic 4-step algorithm: trivialization check → counterexample search via 4 standard magma models → advanced heuristics → final verdict
+
+<details>
+<summary><strong>submission.txt</strong> (5.9 KB)</summary>
+
+```
+You are a mathematician specializing in equational theories of magmas.
+Your task is to determine whether Equation 1 ({{ equation1 }}) implies Equation 2 ({{ equation2 }}) over all magmas.
+
+You are an expert mathematician specializing in universal algebra. Your task is to determine if `equation1` universally implies `equation2` for any arbitrary magma (a set with a single uninterpreted binary operation `*`).
+
+**CRITICAL RULES:**
+1. **NO ASSUMED PROPERTIES**: The operation `*` is an arbitrary binary operation. It is **NOT** commutative, **NOT** associative, and has no identity or inverses unless derivable from the given equations.
+2. **UNIVERSAL QUANTIFICATION**: Variables in the equations are implicitly universally quantified. If an equation forces a constraint on free variables like `x = y`, `x = c`, `0 = z`, or `x = y ^ z`, it means the magma must be trivial (1 element).
+3. **NO CANCELLATION**: `x * y = x * z` does NOT imply `y = z`.
+
+**THE 4-STEP ALGORITHM:**
+Follow this deterministic flowchart exactly.
+
+**Step 1: Isolated Variable Trivialization (Applies ONLY to `equation1`)**
+- Check if `equation1` is of the exact form `V = Term` or `Term = V`, where `V` is a single standalone variable that does **NOT** appear anywhere in `Term`.
+- *Examples:* `x = y * (z * w)` or `x = (y * y) * z`.
+- If YES: `equation1` forces the magma to be trivial. Output **TRUE**.
+- If NO: Proceed to Step 2.
+
+**Step 2: Standard Magma Models for Counterexamples**
+Test 4 standard models to find a counterexample.
+*How to evaluate the models safely and instantly:*
+1. **Left-zero semigroup ($a * b = a$):** Any expression evaluates to its **left-most variable**.
+2. **Right-zero semigroup ($a * b = b$):** Any expression evaluates to its **right-most variable**.
+3. **Constant magma ($a * b = c$):** Any expression that contains **at least one `*` operation** evaluates to the constant `c`. A single standalone variable remains itself.
+4. **XOR / Parity magma ($a * b = a \oplus b$):** Flatten the expression and count occurrences of EACH variable on each side. ODD occurrences → variable remains. EVEN occurrences → variable cancels out.
+
+*For each model:*
+1. Simplify `equation1`. If not a tautology → **ABORT** this model (constraint). If tautology → model is **VALID**.
+2. If VALID, simplify `equation2`. If constraint → **Output FALSE** (counterexample found). If tautology → inconclusive, try next model.
+
+**Step 3: Advanced Heuristics for Unresolved Cases**
+If Step 2 found no counterexample:
+- *All 4 models aborted:* 3+ distinct variables → **TRUE**, 2 variables → **FALSE**
+- *At least one valid model was inconclusive:* Check for specific restrictive syntactic forms (product of distinct variables with free variable, or absorption/identity form with 3+ variables) → **TRUE** if matched, else **FALSE**
+
+**Step 4: Final Verdict**
+Output step-by-step reasoning following the algorithm exactly.
+```
+
+</details>
+
 ## Project Structure
 
 ```

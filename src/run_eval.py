@@ -22,6 +22,7 @@ from pathlib import Path
 import dspy
 
 from data import load_problems, train_val_split
+from observer import GEPAObserver
 from solver import SolverV1, SolverV2, SolverV3
 
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -225,10 +226,18 @@ def run_evaluation(
     num_threads: int = 4,
     seed: int = 42,
     dry_run: bool = False,
+    temperature: float = 0.0,
+    no_cot: bool = False,
+    repeat: int = 1,
+    reasoning_effort: str | None = None,
+    thinking_budget: int | None = None,
 ):
     """Run evaluation and record results. Can be called from CLI or programmatically."""
 
     setup_vertex_ai()
+
+    # Generate eval ID early (needed by observer)
+    eval_id = uuid.uuid4().hex[:12]
 
     # Load problems
     print(f"Loading problems for subset: {subset}")
@@ -236,7 +245,17 @@ def run_evaluation(
     print(f"  {len(problems)} problems loaded")
 
     # Load solver
-    solver = make_solver(solver_version, cheatsheet=cheatsheet or "")
+    if no_cot:
+        # No chain-of-thought — use dspy.Predict directly
+        class NoCotSolver(dspy.Module):
+            def __init__(self):
+                self.solve = dspy.Predict("equation1: str, equation2: str -> verdict: bool")
+            def forward(self, equation1: str, equation2: str):
+                return self.solve(equation1=equation1, equation2=equation2)
+        solver = NoCotSolver()
+    else:
+        solver = make_solver(solver_version, cheatsheet=cheatsheet or "")
+
     solver_path_obj = Path(solver_path)
     if solver_path_obj.suffix == ".json":
         solver.load(solver_path)
@@ -249,11 +268,34 @@ def run_evaluation(
     else:
         raise ValueError(f"Unsupported solver file type: {solver_path_obj.suffix} (use .json or .txt)")
 
-    # Setup LM (skip in dry-run mode)
+    # Setup LM and observer (skip in dry-run mode)
     student_lm = None
+    observer = None
     if not dry_run:
-        student_lm = dspy.LM(model=student_model, temperature=0.0, max_tokens=20000, num_retries=8)
-        dspy.configure(lm=student_lm, num_threads=num_threads)
+        lm_kwargs = dict(model=student_model, temperature=temperature, max_tokens=20000, num_retries=8)
+        # Reasoning/thinking params — litellm handles provider mapping
+        if reasoning_effort:
+            lm_kwargs["reasoning_effort"] = reasoning_effort
+        if thinking_budget is not None:
+            lm_kwargs["thinking"] = {"type": "enabled", "budget_tokens": thinking_budget}
+        student_lm = dspy.LM(**lm_kwargs)
+
+        # Observer logs all LLM calls with full prompts/responses
+        observer = GEPAObserver(
+            db_path=str(PROJECT_ROOT / db_path),
+            run_name=f"eval_{eval_id}",
+            solver=solver_version,
+            auto="eval",
+            student_model=student_model,
+        )
+        # Use eval_id as the run_id so llm_calls link to our eval
+        old_run_id = observer.run_id
+        observer.run_id = eval_id
+        # Move the runs row to use eval_id, then delete it (we use eval_runs instead)
+        observer.db.execute("DELETE FROM runs WHERE run_id = ?", (old_run_id,))
+        observer.db.execute("DELETE FROM runs WHERE run_id = ?", (eval_id,))
+
+        dspy.configure(lm=student_lm, callbacks=[observer], num_threads=num_threads)
 
     # Load GEPA val results to reuse (if provided)
     reuse_results = {}
@@ -263,13 +305,31 @@ def run_evaluation(
 
     # Setup DB
     db = sqlite3.connect(str(PROJECT_ROOT / db_path), check_same_thread=False, isolation_level=None)
-    eval_id = uuid.uuid4().hex[:12]
 
     # Auto-generate display name
     if not display_name:
         model_short = student_model.split("/")[-1]
         source = f"gepa:{gepa_run_id[:8]}" if gepa_run_id else "manual"
-        display_name = f"{model_short} / {solver_version} ({source})"
+        reasoning = "no-cot" if no_cot else "cot"
+        temp_str = f"t={temperature}" if temperature != 0.0 else "t=0"
+        repeat_str = f" x{repeat}" if repeat > 1 else ""
+        thinking_str = ""
+        if thinking_budget is not None:
+            thinking_str = f", think={thinking_budget}"
+        elif reasoning_effort:
+            thinking_str = f", {reasoning_effort}"
+        display_name = f"{model_short} / {solver_version} ({source}, {reasoning}, {temp_str}{thinking_str}{repeat_str})"
+
+    # Expand problems for repeats
+    if repeat > 1:
+        expanded_problems = []
+        for r in range(repeat):
+            for p in problems:
+                expanded_problems.append({**p, "_repeat_id": r + 1})
+        total_runs = len(expanded_problems)
+    else:
+        expanded_problems = [{**p, "_repeat_id": 1} for p in problems]
+        total_runs = len(problems)
 
     db.execute("""
         INSERT INTO eval_runs (eval_id, gepa_run_id, solver_path, solver_version, student_model,
@@ -280,8 +340,11 @@ def run_evaluation(
 
     print(f"\nEval ID: {eval_id}")
     print(f"Display name: {display_name}")
-    print(f"Student: {student_model}")
-    print(f"Subset: {subset} ({len(problems)} problems, {len(reuse_results)} from GEPA cache)")
+    print(f"Student: {student_model} (temperature={temperature})")
+    print(f"Reasoning: {'no CoT (Predict)' if no_cot else 'CoT (ChainOfThought)'}")
+    print(f"Subset: {subset} ({len(problems)} problems x {repeat} repeat{'s' if repeat > 1 else ''} = {total_runs} runs)")
+    if reuse_results:
+        print(f"GEPA cache: {len(reuse_results)} results to reuse")
     if dry_run:
         print(f"DRY RUN: predicting FALSE for non-cached problems (no LLM calls)")
     print()
@@ -293,12 +356,13 @@ def run_evaluation(
     completed = 0
 
     try:
-        for i, problem in enumerate(problems):
+        for i, problem in enumerate(expanded_problems):
             pid = problem["problem_id"]
+            repeat_id = problem["_repeat_id"]
             expected = bool(problem["answer"])
 
-            # Check if we can reuse GEPA result
-            cached = reuse_results.get(pid)
+            # Check if we can reuse GEPA result (only on first repeat)
+            cached = reuse_results.get(pid) if repeat_id == 1 else None
             if cached is not None:
                 predicted = cached["predicted"]
                 correct = cached["correct"]
@@ -324,7 +388,7 @@ def run_evaluation(
 
                 completed += 1
                 status = "correct" if correct else "WRONG"
-                print(f"  [{completed}/{len(problems)}] {pid}: {status} (cached)")
+                print(f"  [{completed}/{total_runs}] {pid}: {status} (cached)")
                 continue
 
             # Dry-run mode: predict FALSE without calling LLM
@@ -403,20 +467,24 @@ def run_evaluation(
             if dry_run and not cached:
                 label += " (dry-run)"
             acc_so_far = (tp + tn) / completed if completed > 0 else 0
-            print(f"  [{completed}/{len(problems)}] {pid}: pred={predicted} exp={expected} -> {label}  (acc={acc_so_far:.1%}, cost=${total_cost:.4f})")
+            rep_label = f" r{repeat_id}" if repeat > 1 else ""
+            print(f"  [{completed}/{total_runs}] {pid}{rep_label}: pred={predicted} exp={expected} -> {label}  (acc={acc_so_far:.1%}, cost=${total_cost:.4f})")
 
     except KeyboardInterrupt:
-        print(f"\nCancelled after {completed}/{len(problems)} problems.")
+        print(f"\nCancelled after {completed}/{total_runs} runs.")
 
     # Compute aggregates
     total_evaluated = tp + fp + fn + tn + unparsed
     accuracy = (tp + tn) / total_evaluated if total_evaluated > 0 else 0
     f1 = (2 * tp) / (2 * tp + fp + fn) if (2 * tp + fp + fn) > 0 else 0
     parse_rate = (total_evaluated - unparsed) / total_evaluated if total_evaluated > 0 else 0
-    avg_cost = total_cost / max(1, completed - len([p for p in problems[:completed] if reuse_results.get(p["problem_id"])]))
-    avg_time = total_time / max(1, completed - len([p for p in problems[:completed] if reuse_results.get(p["problem_id"])]))
+    llm_calls = max(1, completed)
+    if reuse_results:
+        llm_calls = max(1, completed - sum(1 for p in expanded_problems[:completed] if reuse_results.get(p["problem_id"]) and p["_repeat_id"] == 1))
+    avg_cost = total_cost / llm_calls
+    avg_time = total_time / llm_calls
 
-    status = "completed" if completed == len(problems) else "cancelled"
+    status = "completed" if completed == total_runs else "cancelled"
 
     db.execute("""
         UPDATE eval_runs SET
@@ -434,7 +502,7 @@ def run_evaluation(
     print(f"Evaluation Complete: {eval_id}")
     print(f"{'='*60}")
     print(f"  Status:     {status}")
-    print(f"  Problems:   {completed}/{len(problems)}")
+    print(f"  Runs:       {completed}/{total_runs} ({len(problems)} problems x {repeat})")
     print(f"  Accuracy:   {accuracy:.2%}")
     print(f"  F1 Score:   {f1:.4f}")
     print(f"  TP={tp}  FP={fp}  FN={fn}  TN={tn}  Unparsed={unparsed}")
@@ -463,6 +531,13 @@ def main():
     parser.add_argument("--num-threads", type=int, default=4)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--dry-run", action="store_true", help="Predict FALSE for non-cached problems instead of calling LLM")
+    parser.add_argument("--temperature", type=float, default=0.0, help="LM temperature (0=deterministic, default=0.0)")
+    parser.add_argument("--no-cot", action="store_true", help="No chain-of-thought — use dspy.Predict instead of ChainOfThought")
+    parser.add_argument("--repeat", type=int, default=1, help="Run each problem N times (for consistency measurement)")
+    parser.add_argument("--reasoning-effort", default=None, choices=["low", "medium", "high"],
+                        help="Reasoning effort (litellm standard — maps to provider-specific params)")
+    parser.add_argument("--thinking-budget", type=int, default=None,
+                        help="Thinking token budget (Gemini: 512-24576 for Flash Lite)")
     args = parser.parse_args()
 
     cheatsheet = ""
@@ -482,6 +557,11 @@ def main():
         num_threads=args.num_threads,
         seed=args.seed,
         dry_run=args.dry_run,
+        temperature=args.temperature,
+        no_cot=args.no_cot,
+        repeat=args.repeat,
+        reasoning_effort=args.reasoning_effort,
+        thinking_budget=args.thinking_budget,
     )
 
 
